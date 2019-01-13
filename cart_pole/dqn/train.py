@@ -79,7 +79,7 @@ def update_target_model(net, target_net):
     target_net.load_state_dict(net.state_dict())
 
 
-if __name__ == "__main__":
+def main():
     env = gym.make(args.env_name)
     env.seed(500)
     torch.manual_seed(500)
@@ -154,4 +154,7 @@ if __name__ == "__main__":
             ckpt_path = args.save_path + 'model.pth'
             torch.save(net.state_dict(), ckpt_path)
             print('running score exceeds 400 so end')
-            break   
+            break  
+
+if __name__ == '__main__':
+    main()
