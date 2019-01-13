@@ -93,3 +93,65 @@ if __name__ == "__main__":
     
     optimizer = optim.Adam(net.parameters(), lr=0.001)
     writer = SummaryWriter('logs')
+
+    if not os.path.isdir(args.save_path):
+        os.makedirs(args.save_path)
+    
+    net.to(device)
+    target_net.to(device)
+    net.train()
+    target_net.train()
+    memory = ReplayMemory(10000)
+    running_score = 0
+    epsilon = 1.0
+    steps = 0
+    
+    for e in range(3000):
+        done = False
+        
+        score = 0
+        state = env.reset()
+        state = torch.Tensor(state).to(device)
+        state = state.unsqueeze(0)
+
+        while not done:
+            if args.render:
+                env.render()
+
+            steps += 1
+            qvalue = net(state)
+            action = get_action(epsilon, qvalue, num_actions)
+            next_state, reward, done, _ = env.step(action)
+            
+            next_state = torch.Tensor(next_state)
+            next_state = next_state.unsqueeze(0)
+            
+            mask = 0 if done else 1
+            reward = reward if not done or score == 499 else -1
+            memory.push(state, next_state, action, reward, mask)
+
+            score += reward
+            state = next_state
+
+            if steps > args.initial_exploration:
+                epsilon -= 0.00005
+                epsilon = max(epsilon, 0.1)
+
+                batch = memory.sample(args.batch_size)
+                train_model(net, target_net, optimizer, batch, args.batch_size)
+
+                if steps % args.update_target:
+                    update_target_model(net, target_net)
+
+        score = score if score == 500.0 else score + 1
+        running_score = 0.99 * running_score + 0.01 * score
+        if e % args.log_interval == 0:
+            print('{} episode | score: {:.2f} | epsilon: {:.2f}'.format(
+                e, running_score, epsilon))
+            writer.add_scalar('log/score', float(score), running_score)
+
+        if running_score > args.goal_score:
+            ckpt_path = args.save_path + 'model.pth'
+            torch.save(net.state_dict(), ckpt_path)
+            print('running score exceeds 400 so end')
+            break   
