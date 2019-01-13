@@ -1,3 +1,5 @@
+# from https://github.com/reinforcement-learning-kr/reinforcement-learning-pytorch/blob/master/2-cartpole/1-dqn/test.py
+
 import gym
 import math
 import random

@@ -1,3 +1,5 @@
+# from https://github.com/reinforcement-learning-kr/reinforcement-learning-pytorch/blob/master/2-cartpole/1-dqn/train.py
+
 import os
 import sys
 import gym
@@ -41,8 +43,8 @@ def train_model(net, target_net, optimizer, batch, batch_size):
     masks = torch.Tensor(batch.mask).to(device)
 
     # 현재 상태에 대한 모델의 큐함수
-    # 다음 상태에 대한 타깃 모델의 큐함수
     pred = net(states).squeeze(1) # squeeze - 불필요한 차원 없애기
+    # 다음 상태에 대한 타깃 모델의 큐함수
     next_pred = target_net(next_states).squeeze(1)
 
     one_hot_action = torch.zeros(batch_size, pred.size(-1))
@@ -91,5 +93,3 @@ if __name__ == "__main__":
     
     optimizer = optim.Adam(net.parameters(), lr=0.001)
     writer = SummaryWriter('logs')
-
-    pass
