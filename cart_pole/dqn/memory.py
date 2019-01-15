@@ -1,4 +1,4 @@
-# from https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+# from https://github.com/pytorch/tutorials/blob/master/intermediate_source/reinforcement_q_learning.py
 
 import random
 from collections import namedtuple
