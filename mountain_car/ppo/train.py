@@ -1,15 +1,16 @@
 import os
 import gym
+import pylab
 import argparse
 import numpy as np
 
 import torch
 import torch.optim as optim
+from torch.distributions import Categorical
 from tensorboardX import SummaryWriter 
 
 from memory import Memory
 from ppo import train_model
-from utils import get_action
 from model import Actor, Critic
 
 parser = argparse.ArgumentParser(description='PyTorch PPO')
@@ -18,7 +19,7 @@ parser.add_argument('--load_model', type=str, default=None)
 parser.add_argument('--save_path', type=str, default='./save_model/', help='')
 parser.add_argument('--render', action="store_true", default=False, help='')
 parser.add_argument('--gamma', type=float, default=0.99, help='')
-parser.add_argument('--lambda', type=float, default=0.98, help='')
+parser.add_argument('--lamda', type=float, default=0.98, help='')
 parser.add_argument('--critic_lr', type=float, default=3e-4, help='')
 parser.add_argument('--actor_lr', type=float, default=3e-4, help='')
 parser.add_argument('--l2_rate', type=float, default=1e-3, help='')
@@ -27,6 +28,12 @@ parser.add_argument('--batch_size', type=int, default=64, help='')
 parser.add_argument('--logdir', type=str, default='logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
+
+def get_action(policies):
+    m = Categorical(policies)
+    action = m.sample()
+    action = action.data.numpy()[0]
+    return action
 
 
 def main():
@@ -59,18 +66,17 @@ def main():
         actor.load_state_dict(ckpt['actor'])
         critic.load_state_dict(ckpt['critic'])
 
+    episodes, scores = [], []
+    episode = 0    
 
-    episodes = 0    
-
-    for iter in range(10000):
+    for iter in range(100000):
         actor.eval(), critic.eval()
         memory = Memory()
 
-        scores = []
         steps = 0
 
         while steps < 2048:
-            episodes += 1
+            episode += 1
 
             state = env.reset()
             score = 0
@@ -98,31 +104,27 @@ def main():
 
                 if done:
                     break
-            
-            # The end of the first while-loop
+
             scores.append(score)
-        
-        # The end of the second while-loop
-        score_avg = np.mean(scores)
-        print('{} episode score is {:.2f}'.format(episodes, score_avg))
-        writer.add_scalar('log/score', float(score_avg), iter)
+            episodes.append(episode)
+            pylab.plot(episodes, scores, 'b')
+            pylab.savefig("./learning_curves/ppo_train.png")
+            
+            score_avg = np.mean(scores)
+            writer.add_scalar('log/score', float(score_avg), episode)
         
         transitions = memory.sample()
         actor.train(), critic.train()
         train_model(actor, critic, transitions, actor_optim, critic_optim, args)
-
-
-        # if iter % 100:
-        #     score_avg = int(score_avg)
-        #     ckpt_path = os.path.join(args.save_path, 'ckpt_'+ str(score_avg)+'.pth.tar')
-
-        #     torch.save({
-        #         'actor': actor.state_dict(),
-        #         'critic': critic.state_dict(),
-        #         'args': args,
-        #         'score': score_avg
-        #     }, filename=ckpt_path)
-
+        
+        if iter % 200:
+            print('{} episode score is {:.2f}'.format(episode, score_avg))
+    
+            ckpt_path = args.save_path + 'model.pth'
+            torch.save({
+                'actor': actor.state_dict(),
+                'critic': critic.state_dict(),
+                }, ckpt_path)
 
 if __name__ == '__main__':
     main()
