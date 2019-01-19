@@ -4,7 +4,7 @@ import numpy as np
 
 def train_discrim(discrim, transitions, discrim_optim, trajectories, args):
     states = torch.stack(transitions.state)
-    actions = torch.FloatTensor(transitions.action).unsqueeze(1)
+    actions = torch.Tensor(transitions.action).unsqueeze(1)
 
     criterion = torch.nn.BCELoss()
 
