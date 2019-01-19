@@ -75,7 +75,7 @@ def main():
 
         steps = 0
 
-        while steps < 2048:
+        while steps < 2048: # 배치를 몇씩 모아서 학습시켜야 하는가? (마운틴카에서는)
             episode += 1
 
             state = env.reset()
@@ -91,6 +91,7 @@ def main():
                 policies = actor(state.unsqueeze(0))
                 action = get_action(policies)
                 next_state, reward, done, _ = env.step(action)
+                reward += next_state  # bonus reward 
 
                 if done:
                     mask = 0
@@ -109,17 +110,16 @@ def main():
             episodes.append(episode)
             pylab.plot(episodes, scores, 'b')
             pylab.savefig("./learning_curves/ppo_train.png")
-            
-            score_avg = np.mean(scores)
-            writer.add_scalar('log/score', float(score_avg), episode)
+        
+        score_avg = np.mean(scores)
+        print('{} episode score is {}'.format(episode, score_avg))
+        writer.add_scalar('log/score', float(score_avg), iter)
         
         transitions = memory.sample()
         actor.train(), critic.train()
         train_model(actor, critic, transitions, actor_optim, critic_optim, args)
         
-        if iter % 200:
-            print('{} episode score is {:.2f}'.format(episode, score_avg))
-    
+        if iter % 100:
             ckpt_path = args.save_path + 'model.pth'
             torch.save({
                 'actor': actor.state_dict(),

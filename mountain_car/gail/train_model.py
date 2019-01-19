@@ -1,7 +1,32 @@
 import torch
 import numpy as np
 
-def train_model(actor, critic, transitions, actor_optim, critic_optim, args):
+
+def train_discrim(discrim, transitions, discrim_optim, trajectories, args):
+    states = torch.stack(transitions.state)
+    actions = torch.FloatTensor(transitions.action).unsqueeze(1)
+
+    criterion = torch.nn.BCELoss()
+
+    for _ in range(1):
+        expert_state_action = torch.Tensor(trajectories)
+        
+        learner = discrim(torch.cat([states, actions], dim=1))
+        # torch.Size([200, 1])
+        # print("learner.shape", learner.shape)
+        expert = discrim(expert_state_action)
+        # torch.Size([20, 130, 1])
+        # print("expert.shape", expert.shape)
+
+        discrim_loss = criterion(learner, torch.ones(states.shape[0], 1)) + \
+                        criterion(expert, torch.zeros(trajectories.shape[0], trajectories.shape[1], 1))
+        
+        discrim_optim.zero_grad()
+        discrim_loss.backward()
+        discrim_optim.step()
+
+        
+def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args):
     states = torch.stack(transitions.state)
     actions = torch.LongTensor(transitions.action)
     rewards = torch.Tensor(transitions.reward)
@@ -67,7 +92,6 @@ def train_model(actor, critic, transitions, actor_optim, critic_optim, args):
             loss.backward()
             actor_optim.step()
 
-
 def get_gae(rewards, masks, values, args):
     returns = torch.zeros_like(rewards)
     advants = torch.zeros_like(rewards)
@@ -93,7 +117,6 @@ def get_gae(rewards, masks, values, args):
     advants = (advants - advants.mean()) / advants.std()
     return returns, advants
 
-
 def surrogate_loss(actor, advants, states, old_policy, actions, batch_index):
     policies = actor(states)
     new_policy = policies[range(len(actions)), actions]
@@ -102,3 +125,5 @@ def surrogate_loss(actor, advants, states, old_policy, actions, batch_index):
     ratio = torch.exp(new_policy - old_policy)
     surrogate_loss = ratio * advants
     return surrogate_loss, ratio
+
+
