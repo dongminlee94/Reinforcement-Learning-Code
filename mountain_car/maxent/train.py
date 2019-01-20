@@ -12,9 +12,9 @@ feature_matrix = np.eye((n_states)) # (400, 400)
 
 gamma = 0.9
 q_learning_rate = 0.03
-epochs = 200
+epochs = 20
 theta_learning_rate = 0.01
-enter_by_irl = 100000
+enter_by_irl = 10000
 
 def idx_trajectories(env, one_feature):
     env_low = env.observation_space.low     
@@ -79,7 +79,7 @@ def main():
             if episode > enter_by_irl:
                 irl_reward = irl_rewards[next_state_idx]
                 update_q_table(state_idx, action, irl_reward, next_state_idx)
-                score += irl_reward
+                score += reward
             else:
                 update_q_table(state_idx, action, reward, next_state_idx)      
                 score += reward

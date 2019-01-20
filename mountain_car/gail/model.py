@@ -40,8 +40,6 @@ class Discriminator(nn.Module):
         self.fc1 = nn.Linear(num_inputs, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 1)
-        self.fc1.weight.data.fill_(-1.0)
-        self.fc1.bias.data.fill_(-1.0)
         self.fc3.weight.data.mul_(0.1)
         self.fc3.bias.data.mul_(0.0)
 

@@ -64,7 +64,7 @@ def main():
     trajectories = np.load(file="./make_expert/expert_trajectories.npy")
     print("trajectories.shape", trajectories.shape)
 
-    # writer = SummaryWriter(args.logdir)
+    writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
@@ -76,6 +76,7 @@ def main():
         actor.load_state_dict(ckpt['actor'])
         critic.load_state_dict(ckpt['critic'])
         discrim.load_state_dict(ckpt['discrim'])
+
 
     episodes, scores = [], []    
 
@@ -92,16 +93,16 @@ def main():
 
             state = torch.Tensor(state)
             policies = actor(state.unsqueeze(0))
-            action = get_action(policies)
-            next_state, _, done, _ = env.step(action)
-            reward = get_reward(discrim, state, action)
+            action = get_action(policies) 
+            next_state, reward, done, _ = env.step(action)
+            irl_reward = get_reward(discrim, state, action)
 
             if done:
                 mask = 0
             else:
                 mask = 1
 
-            memory.push(state, action, reward, mask)
+            memory.push(state, action, irl_reward, mask)
             
             score += reward
             state = next_state
@@ -113,7 +114,7 @@ def main():
                 pylab.savefig("./learning_curves/gail_train.png")
                 break
 
-        # writer.add_scalar('log/score', float(score_avg), iter)
+        writer.add_scalar('log/score', float(score_avg), iter)
         
         if episode % 50 == 0:
             score_avg = np.mean(scores)

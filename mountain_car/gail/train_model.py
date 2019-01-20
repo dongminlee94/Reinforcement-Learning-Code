@@ -12,11 +12,7 @@ def train_discrim(discrim, transitions, discrim_optim, trajectories, args):
         expert_state_action = torch.Tensor(trajectories)
         
         learner = discrim(torch.cat([states, actions], dim=1))
-        # torch.Size([200, 1])
-        # print("learner.shape", learner.shape)
         expert = discrim(expert_state_action)
-        # torch.Size([20, 130, 1])
-        # print("expert.shape", expert.shape)
 
         discrim_loss = criterion(learner, torch.ones(states.shape[0], 1)) + \
                         criterion(expert, torch.zeros(trajectories.shape[0], trajectories.shape[1], 1))
@@ -46,7 +42,6 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
     
     # ----------------------------
     # step 2: get value loss and actor loss and update actor & critic
-    # batch를 random suffling하고 mini batch를 추출
     for _ in range(10):
         np.random.shuffle(arr)
         
@@ -61,7 +56,6 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
             oldvalue_samples = old_values[batch_index].detach()
 
             values = critic(inputs)
-            # clipping을 사용하여 critic loss 구하기 
             clipped_values = oldvalue_samples + \
                              torch.clamp(values - oldvalue_samples,
                                          -args.clip_param, # 0.2
@@ -70,12 +64,10 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
             critic_loss2 = criterion(values, returns_samples)
             critic_loss = torch.max(critic_loss1, critic_loss2).mean()
 
-            # 논문에서 수식 6. surrogate loss 구하기
             loss, ratio = surrogate_loss(actor, advants_samples, inputs,
                                          old_policy.detach(), actions_samples,
                                          batch_index)
 
-            # 논문에서 수식 7. surrogate loss를 clipping해서 actor loss 만들기
             clipped_ratio = torch.clamp(ratio,
                                         1.0 - args.clip_param,
                                         1.0 + args.clip_param)
@@ -104,12 +96,10 @@ def get_gae(rewards, masks, values, args):
         running_returns = rewards[t] + (args.gamma * running_returns * masks[t])
         returns[t] = running_returns
 
-        # 논문에서 수식 10
         running_delta = rewards[t] + (args.gamma * previous_value * masks[t]) - \
                                         values.data[t]
         previous_value = values.data[t]
         
-        # 논문에서 수식 14 + lambda 추가
         running_advants = running_delta + (args.gamma * args.lamda * \
                                             running_advants * masks[t])
         advants[t] = running_advants
