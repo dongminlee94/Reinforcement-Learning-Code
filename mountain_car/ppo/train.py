@@ -75,7 +75,7 @@ def main():
 
         steps = 0
 
-        while steps < 2048: # 배치를 몇씩 모아서 학습시켜야 하는가? (마운틴카에서는)
+        while steps < 2048:
             episode += 1
 
             state = env.reset()

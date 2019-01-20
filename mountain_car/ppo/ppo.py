@@ -21,7 +21,6 @@ def train_model(actor, critic, transitions, actor_optim, critic_optim, args):
     
     # ----------------------------
     # step 2: get value loss and actor loss and update actor & critic
-    # batch를 random suffling하고 mini batch를 추출
     for _ in range(10):
         np.random.shuffle(arr)
         
@@ -36,21 +35,18 @@ def train_model(actor, critic, transitions, actor_optim, critic_optim, args):
             oldvalue_samples = old_values[batch_index].detach()
 
             values = critic(inputs)
-            # clipping을 사용하여 critic loss 구하기 
             clipped_values = oldvalue_samples + \
                              torch.clamp(values - oldvalue_samples,
-                                         -args.clip_param, # 0.2
+                                         -args.clip_param,
                                          args.clip_param)
             critic_loss1 = criterion(clipped_values, returns_samples)
             critic_loss2 = criterion(values, returns_samples)
             critic_loss = torch.max(critic_loss1, critic_loss2).mean()
 
-            # 논문에서 수식 6. surrogate loss 구하기
             loss, ratio = surrogate_loss(actor, advants_samples, inputs,
                                          old_policy.detach(), actions_samples,
                                          batch_index)
 
-            # 논문에서 수식 7. surrogate loss를 clipping해서 actor loss 만들기
             clipped_ratio = torch.clamp(ratio,
                                         1.0 - args.clip_param,
                                         1.0 + args.clip_param)
@@ -80,12 +76,10 @@ def get_gae(rewards, masks, values, args):
         running_returns = rewards[t] + (args.gamma * running_returns * masks[t])
         returns[t] = running_returns
 
-        # 논문에서 수식 10
         running_delta = rewards[t] + (args.gamma * previous_value * masks[t]) - \
                                         values.data[t]
         previous_value = values.data[t]
         
-        # 논문에서 수식 14 + lambda 추가
         running_advants = running_delta + (args.gamma * args.lamda * \
                                             running_advants * masks[t])
         advants[t] = running_advants
