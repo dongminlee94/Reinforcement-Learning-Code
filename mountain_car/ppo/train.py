@@ -54,7 +54,7 @@ def main():
     critic_optim = optim.Adam(critic.parameters(), lr=args.critic_lr, 
                               weight_decay=args.l2_rate) 
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
@@ -66,65 +66,59 @@ def main():
         actor.load_state_dict(ckpt['actor'])
         critic.load_state_dict(ckpt['critic'])
 
-    episodes, scores = [], []
-    episode = 0    
+    episodes, scores = [], []  
 
-    for iter in range(100000):
+    for episode in range(100000):
         actor.eval(), critic.eval()
         memory = Memory()
 
-        steps = 0
+        state = env.reset()
+        score = 0
 
-        while steps < 2048:
-            episode += 1
+        while True:
+            if args.render:
+                env.render()
 
-            state = env.reset()
-            score = 0
+            state = torch.Tensor(state)
+            policies = actor(state.unsqueeze(0))
+            action = get_action(policies)
+            next_state, reward, done, _ = env.step(action)
+            bouns_reward = reward + next_state[0] * 2  # bonus reward 
 
-            while True: 
-                if args.render:
-                    env.render()
+            if done:
+                mask = 0
+            else:
+                mask = 1
 
-                steps += 1
+            memory.push(state, action, bouns_reward, mask)
+            
+            score += reward
+            state = next_state
 
-                state = torch.Tensor(state)
-                policies = actor(state.unsqueeze(0))
-                action = get_action(policies)
-                next_state, reward, done, _ = env.step(action)
-                reward += next_state  # bonus reward 
+            if done:
+                scores.append(score)
+                episodes.append(episode)
+                pylab.plot(episodes, scores, 'b')
+                pylab.savefig("./learning_curves/ppo_train.png")
+                break
 
-                if done:
-                    mask = 0
-                else:
-                    mask = 1
-
-                memory.push(state, action, reward, mask)
-                
-                score += reward
-                state = next_state
-
-                if done:
-                    break
-
-            scores.append(score)
-            episodes.append(episode)
-            pylab.plot(episodes, scores, 'b')
-            pylab.savefig("./learning_curves/ppo_train.png")
+        # writer.add_scalar('log/score', float(score_avg), iter)
         
-        score_avg = np.mean(scores)
-        print('{} episode score is {}'.format(episode, score_avg))
-        writer.add_scalar('log/score', float(score_avg), iter)
-        
+        if episode % 50 == 0:
+            score_avg = np.mean(scores)
+            print('{} episode score is {:.2f}'.format(episode, score_avg))
+
         transitions = memory.sample()
+        
         actor.train(), critic.train()
         train_model(actor, critic, transitions, actor_optim, critic_optim, args)
         
-        if iter % 100:
-            ckpt_path = args.save_path + 'model.pth'
-            torch.save({
-                'actor': actor.state_dict(),
-                'critic': critic.state_dict(),
-                }, ckpt_path)
+        # if iter % 100:
+        #     ckpt_path = args.save_path + 'model.pth'
+        #     torch.save({
+        #         'actor': actor.state_dict(),
+        #         'critic': critic.state_dict(),
+        #         }, ckpt_path)
 
 if __name__ == '__main__':
     main()

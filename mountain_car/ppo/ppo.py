@@ -63,7 +63,6 @@ def train_model(actor, critic, transitions, actor_optim, critic_optim, args):
             loss.backward()
             actor_optim.step()
 
-
 def get_gae(rewards, masks, values, args):
     returns = torch.zeros_like(rewards)
     advants = torch.zeros_like(rewards)
@@ -86,7 +85,6 @@ def get_gae(rewards, masks, values, args):
 
     advants = (advants - advants.mean()) / advants.std()
     return returns, advants
-
 
 def surrogate_loss(actor, advants, states, old_policy, actions, batch_index):
     policies = actor(states)
