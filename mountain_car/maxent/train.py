@@ -1,8 +1,7 @@
 import gym
 import pylab
 import numpy as np
-
-from maxent import maxent_irl
+import maxent
 
 n_states = 400 # position - 20, velocity - 20
 n_actions = 3
@@ -64,7 +63,7 @@ def main():
         score = 0
 
         if episode % enter_by_irl == 0 and episode != 0:
-            irl_rewards = maxent_irl(feature_matrix, n_actions, gamma, 
+            irl_rewards = maxent.maxent_irl(feature_matrix, n_actions, gamma, 
                                                 trajectories, epochs, theta_learning_rate)
             global q_table
             q_table = np.zeros_like(q_table)

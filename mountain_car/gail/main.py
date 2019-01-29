@@ -26,6 +26,8 @@ parser.add_argument('--gamma', type=float, default=0.99,
                     help='discounted factor')
 parser.add_argument('--lamda', type=float, default=0.98, 
                     help='GAE hyper-parameter')
+parser.add_argument('--hidden_size', type=int, default=100, 
+                    help='hidden unit size of actor, critic and discrim networks')
 parser.add_argument('--learning_rate', type=float, default=3e-4, 
                     help='learning rate of models')
 parser.add_argument('--l2_rate', type=float, default=1e-3, 
@@ -34,15 +36,18 @@ parser.add_argument('--clip_param', type=float, default=0.2,
                     help='clipping parameter for PPO')
 parser.add_argument('--batch_size', type=int, default=50, 
                     help='mini-batch size per PPO update')
+parser.add_argument('--seed', type=int, default=500,
+                    help='random seed (default: 1)')
 parser.add_argument('--logdir', type=str, default='logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
     env = gym.make(args.env_name)
-    env.seed(500)
-    torch.manual_seed(500)
+    env.seed(args.seed)
+    torch.manual_seed(args.seed)
 
     num_inputs = env.observation_space.shape[0]
     num_actions = env.action_space.n
@@ -52,9 +57,9 @@ def main():
     print('action size:', num_actions)
     print('action_dim:', action_dim)
 
-    actor = Actor(num_inputs, num_actions)
-    critic = Critic(num_inputs)
-    discrim = Discriminator(num_inputs + action_dim)
+    actor = Actor(num_inputs, num_actions, args).to(device)
+    critic = Critic(num_inputs, args).to(device)
+    discrim = Discriminator(num_inputs + action_dim, args).to(device)
 
     actor_optim = optim.Adam(actor.parameters(), lr=args.learning_rate) 
     critic_optim = optim.Adam(critic.parameters(), lr=args.learning_rate, 
@@ -64,7 +69,7 @@ def main():
     trajectories = np.load(file="./make_expert/expert_trajectories.npy")
     print("trajectories.shape", trajectories.shape)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
@@ -77,62 +82,67 @@ def main():
         critic.load_state_dict(ckpt['critic'])
         discrim.load_state_dict(ckpt['discrim'])
 
+    episodes, scores = [], []
+    episode = 0    
 
-    episodes, scores = [], []    
-
-    for episode in range(100000):
+    for iter in range(300):
         actor.eval(), critic.eval()
         memory = Memory()
         
-        state = env.reset()
-        score = 0
+        step = 0
 
-        while True:
-            if args.render:
-                env.render()
-
-            state = torch.Tensor(state)
-            policies = actor(state.unsqueeze(0))
-            action = get_action(policies) 
-            next_state, reward, done, _ = env.step(action)
-            irl_reward = get_reward(discrim, state, action)
-
-            if done:
-                mask = 0
-            else:
-                mask = 1
-
-            memory.push(state, action, irl_reward, mask)
+        while step < 5000:
+            score = 0
+            state = env.reset()
             
-            score += reward
-            state = next_state
+            for _ in range(200):
+                if args.render:
+                    env.render()
 
-            if done:
-                scores.append(score)
-                episodes.append(episode)
-                pylab.plot(episodes, scores, 'b')
-                pylab.savefig("./learning_curves/gail_train.png")
-                break
+                step += 1
 
-        writer.add_scalar('log/score', float(score_avg), iter)
+                state = torch.Tensor(state)
+                policies = actor(state.unsqueeze(0))
+                action = get_action(policies) 
+                next_state, reward, done, _ = env.step(action)
+                irl_reward = get_reward(discrim, state, action)
+
+                if done:
+                    mask = 0
+                else:
+                    mask = 1
+
+                memory.push(state, action, irl_reward, mask)
+                
+                score += reward
+                state = next_state
+
+                if done:
+                    break
+            
+            episode += 1
+            scores.append(score)
+            episodes.append(episode)
+            pylab.plot(episodes, scores, 'b')
+            pylab.savefig("./learning_curves/gail_train.png")        
         
-        if episode % 50 == 0:
-            score_avg = np.mean(scores)
-            print('{} episode score is {:.2f}'.format(episode, score_avg))
+        score_avg = np.mean(scores)
+        print('{} episode score is {:.2f}'.format(episode, score_avg))
+        # writer.add_scalar('log/score', float(score_avg), iter)
         
         transitions = memory.sample()
         
         actor.train(), critic.train(), discrim.train()
-        train_discrim(discrim, transitions, discrim_optim, trajectories, args)
-        train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args)
+        train_discrim(discrim, transitions, discrim_optim, trajectories, args, device)
+        train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args, device)
         
-        if episode % 100:
-            ckpt_path = args.save_path + 'model.pth'
-            torch.save({
-                'actor': actor.state_dict(),
-                'critic': critic.state_dict(),
-                'discrim': discrim.state_dict(),
-                }, ckpt_path)
+        # if iter % 20:
+        #     ckpt_path = args.save_path + 'model.pth'
+        #     torch.save({
+        #         'actor': actor.state_dict(),
+        #         'critic': critic.state_dict(),
+        #         'discrim': discrim.state_dict(),
+        #         }, ckpt_path)
 
 if __name__ == '__main__':
     main()

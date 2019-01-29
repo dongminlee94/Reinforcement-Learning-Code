@@ -2,36 +2,36 @@ import torch
 import numpy as np
 
 
-def train_discrim(discrim, transitions, discrim_optim, trajectories, args):
-    states = torch.stack(transitions.state)
-    actions = torch.Tensor(transitions.action).unsqueeze(1)
+def train_discrim(discrim, transitions, discrim_optim, trajectories, args, device):
+    states = torch.stack(transitions.state).to(device)
+    actions = torch.Tensor(transitions.action).unsqueeze(1).to(device)
 
     criterion = torch.nn.BCELoss()
 
     for _ in range(1):
-        expert_state_action = torch.Tensor(trajectories)
+        expert_state_action = torch.Tensor(trajectories).to(device)
         
         learner = discrim(torch.cat([states, actions], dim=1))
         expert = discrim(expert_state_action)
 
-        discrim_loss = criterion(learner, torch.ones(states.shape[0], 1)) + \
-                        criterion(expert, torch.zeros(trajectories.shape[0], trajectories.shape[1], 1))
+        discrim_loss = criterion(learner, torch.ones((states.shape[0], 1), device=device)) + \
+                        criterion(expert, torch.zeros((trajectories.shape[0], trajectories.shape[1], 1), device=device))
         
         discrim_optim.zero_grad()
         discrim_loss.backward()
         discrim_optim.step()
 
         
-def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args):
-    states = torch.stack(transitions.state)
-    actions = torch.LongTensor(transitions.action)
-    rewards = torch.Tensor(transitions.reward)
-    masks = torch.Tensor(transitions.mask)
+def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args, device):
+    states = torch.stack(transitions.state).to(device)
+    actions = torch.LongTensor(transitions.action).to(device)
+    rewards = torch.Tensor(transitions.reward).to(device)
+    masks = torch.Tensor(transitions.mask).to(device)
 
     # ----------------------------
     # step 1: get returns and GAEs and log probability of old policy
     old_values = critic(states)
-    returns, advants = get_gae(rewards, masks, old_values, args)
+    returns, advants = get_gae(rewards, masks, old_values, args, device)
 
     policies = actor(states)
     old_policy = policies[range(len(actions)), actions]
@@ -47,7 +47,7 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
         
         for i in range(n // args.batch_size): 
             batch_index = arr[args.batch_size * i : args.batch_size * (i + 1)]
-            batch_index = torch.LongTensor(batch_index)
+            batch_index = torch.LongTensor(batch_index).to(device)
             
             inputs = states[batch_index]
             actions_samples = actions[batch_index]
@@ -64,7 +64,7 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
             critic_loss2 = criterion(values, returns_samples)
             critic_loss = torch.max(critic_loss1, critic_loss2).mean()
 
-            loss, ratio = surrogate_loss(actor, advants_samples, inputs,
+            loss, ratio, entropy = surrogate_loss(actor, advants_samples, inputs,
                                          old_policy.detach(), actions_samples,
                                          batch_index)
 
@@ -73,8 +73,8 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
                                         1.0 + args.clip_param)
             clipped_loss = clipped_ratio * advants_samples
             actor_loss = -torch.min(loss, clipped_loss).mean()
-
-            loss = actor_loss + 0.5 * critic_loss
+        
+            loss = actor_loss + 0.5 * critic_loss - 0.001 * entropy.sum().mean()
 
             critic_optim.zero_grad()
             loss.backward(retain_graph=True) 
@@ -84,9 +84,9 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
             loss.backward()
             actor_optim.step()
 
-def get_gae(rewards, masks, values, args):
-    returns = torch.zeros_like(rewards)
-    advants = torch.zeros_like(rewards)
+def get_gae(rewards, masks, values, args, device):
+    returns = torch.zeros_like(rewards).to(device)
+    advants = torch.zeros_like(rewards).to(device)
     
     running_returns = 0
     previous_value = 0
@@ -114,6 +114,8 @@ def surrogate_loss(actor, advants, states, old_policy, actions, batch_index):
 
     ratio = torch.exp(new_policy - old_policy)
     surrogate_loss = ratio * advants
-    return surrogate_loss, ratio
+    entropy = policies * torch.log(policies)
+
+    return surrogate_loss, ratio, entropy
 
 
