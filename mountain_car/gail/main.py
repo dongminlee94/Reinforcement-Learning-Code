@@ -28,7 +28,7 @@ parser.add_argument('--gamma', type=float, default=0.99,
                     help='discounted factor')
 parser.add_argument('--lamda', type=float, default=0.98, 
                     help='GAE hyper-parameter')
-parser.add_argument('--hidden_size', type=int, default=100, 
+parser.add_argument('--hidden_size', type=int, default=50, 
                     help='hidden unit size of actor, critic and discrim networks')
 parser.add_argument('--learning_rate', type=float, default=3e-4, 
                     help='learning rate of models')
@@ -36,12 +36,12 @@ parser.add_argument('--l2_rate', type=float, default=1e-3,
                     help='l2 regularizer coefficient')
 parser.add_argument('--clip_param', type=float, default=0.2, 
                     help='clipping parameter for PPO')
-parser.add_argument('--min_batch_size', type=int, default=2048, 
-                    help='minimal batch size per PPO update (default: 2048)')
-parser.add_argument('--batch_count', type=int, default=64, 
-                    help='batch count to update')
+parser.add_argument('--total_sample_size', type=int, default=4096, 
+                    help='total batch to collect before PPO update (default: 4096)')
+parser.add_argument('--batch_size', type=int, default=128, 
+                    help='batch size to update (default: 128)')
 parser.add_argument('--seed', type=int, default=500,
-                    help='random seed (default: 1)')
+                    help='random seed (default: 500)')
 parser.add_argument('--logdir', type=str, default='logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
@@ -104,7 +104,7 @@ def main():
         
         step = 0
 
-        while step < args.min_batch_size:
+        while step < args.total_sample_size:
             score = 0
             state = env.reset()
             

@@ -7,16 +7,15 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
         self.fc1 = nn.Linear(num_inputs, args.hidden_size)
         self.fc2 = nn.Linear(args.hidden_size, args.hidden_size)
-        self.fc3 = nn.Linear(args.hidden_size, args.hidden_size)
-        self.fc4 = nn.Linear(args.hidden_size, num_outputs)
-        self.fc4.weight.data.mul_(0.1)
-        self.fc4.bias.data.mul_(0.0)
+        self.fc3 = nn.Linear(args.hidden_size, num_outputs)
+
+        self.fc3.weight.data.mul_(0.1)
+        self.fc3.bias.data.mul_(0.0)
 
     def forward(self, x):
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
-        x = torch.tanh(self.fc3(x))
-        policies = torch.softmax(self.fc4(x), dim=-1)
+        policies = torch.softmax(self.fc3(x), dim=-1)
         return policies
 
 
@@ -25,16 +24,15 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
         self.fc1 = nn.Linear(num_inputs, args.hidden_size)
         self.fc2 = nn.Linear(args.hidden_size, args.hidden_size)
-        self.fc3 = nn.Linear(args.hidden_size, args.hidden_size)
-        self.fc4 = nn.Linear(args.hidden_size, 1)
-        self.fc4.weight.data.mul_(0.1)
-        self.fc4.bias.data.mul_(0.0)
+        self.fc3 = nn.Linear(args.hidden_size, 1)
+
+        self.fc3.weight.data.mul_(0.1)
+        self.fc3.bias.data.mul_(0.0)
 
     def forward(self, x):
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
-        x = torch.tanh(self.fc3(x))
-        value = self.fc4(x)
+        value = self.fc3(x)
         return value
 
 
@@ -43,14 +41,13 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
         self.fc1 = nn.Linear(num_inputs, args.hidden_size)
         self.fc2 = nn.Linear(args.hidden_size, args.hidden_size)
-        self.fc3 = nn.Linear(args.hidden_size, args.hidden_size)
-        self.fc4 = nn.Linear(args.hidden_size, 1)
-        self.fc4.weight.data.mul_(0.1)
-        self.fc4.bias.data.mul_(0.0)
+        self.fc3 = nn.Linear(args.hidden_size, 1)
+        
+        self.fc3.weight.data.mul_(0.1)
+        self.fc3.bias.data.mul_(0.0)
 
     def forward(self, x):
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
-        x = torch.tanh(self.fc3(x))
-        prob = torch.sigmoid(self.fc4(x))
+        prob = torch.sigmoid(self.fc3(x))
         return prob

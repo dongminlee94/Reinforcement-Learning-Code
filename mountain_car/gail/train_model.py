@@ -45,8 +45,8 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
     for _ in range(10):
         np.random.shuffle(arr)
         
-        for i in range(n // args.batch_count): 
-            batch_index = arr[args.batch_count * i : args.batch_count * (i + 1)]
+        for i in range(n // args.batch_size): 
+            batch_index = arr[args.batch_size * i : args.batch_size * (i + 1)]
             batch_index = torch.LongTensor(batch_index).to(device)
             
             inputs = states[batch_index]
@@ -74,7 +74,7 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
             clipped_loss = clipped_ratio * advants_samples
             actor_loss = -torch.min(loss, clipped_loss).mean()
         
-            loss = actor_loss + 0.5 * critic_loss - 0.001 * entropy.sum().mean()
+            loss = actor_loss + 0.5 * critic_loss - 0.01 * entropy.sum().mean()
 
             critic_optim.zero_grad()
             loss.backward(retain_graph=True) 
@@ -117,5 +117,3 @@ def surrogate_loss(actor, advants, states, old_policy, actions, batch_index):
     entropy = policies * torch.log(policies)
 
     return surrogate_loss, ratio, entropy
-
-
