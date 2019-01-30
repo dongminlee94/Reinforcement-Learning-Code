@@ -18,7 +18,7 @@ parser.add_argument('--env_name', type=str, default="MountainCar-v0",
                     help='name of the environment to run')
 parser.add_argument('--load_model', type=str, default=None, 
                     help='')
-parser.add_argument('--load_demo_count', type=int, default=5000, 
+parser.add_argument('--load_demo_size', type=int, default=5000, 
                     help='count of demonstrations to load')
 parser.add_argument('--save_path', type=str, default='./save_model/', 
                     help='path to save the model')
@@ -47,13 +47,13 @@ parser.add_argument('--logdir', type=str, default='logs',
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-if args.load_demo_count == 5000:
+if args.load_demo_size == 5000:
     load_demo = './make_expert/expert_demo_5031.npy'
-elif args.load_demo_count == 20000:
+elif args.load_demo_size == 20000:
     load_demo = './make_expert/expert_demo_20011.npy'
-elif args.load_demo_count == 35000:
+elif args.load_demo_size == 35000:
     load_demo = './make_expert/expert_demo_35011.npy'
-elif args.load_demo_count == 50000:
+elif args.load_demo_size == 50000:
     load_demo = './make_expert/expert_demo_50116.npy'
 
 
