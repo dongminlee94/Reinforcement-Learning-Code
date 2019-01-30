@@ -2,20 +2,20 @@ import torch
 import numpy as np
 
 
-def train_discrim(discrim, transitions, discrim_optim, trajectories, args, device):
+def train_discrim(discrim, transitions, discrim_optim, demonstrations, device):
     states = torch.stack(transitions.state).to(device)
     actions = torch.Tensor(transitions.action).unsqueeze(1).to(device)
 
     criterion = torch.nn.BCELoss()
 
     for _ in range(1):
-        expert_state_action = torch.Tensor(trajectories).to(device)
+        expert_state_action = torch.Tensor(demonstrations).to(device)
         
         learner = discrim(torch.cat([states, actions], dim=1))
         expert = discrim(expert_state_action)
 
         discrim_loss = criterion(learner, torch.ones((states.shape[0], 1), device=device)) + \
-                        criterion(expert, torch.zeros((trajectories.shape[0], trajectories.shape[1], 1), device=device))
+                        criterion(expert, torch.zeros((demonstrations.shape[0], 1), device=device))
         
         discrim_optim.zero_grad()
         discrim_loss.backward()
@@ -45,8 +45,8 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
     for _ in range(10):
         np.random.shuffle(arr)
         
-        for i in range(n // args.batch_size): 
-            batch_index = arr[args.batch_size * i : args.batch_size * (i + 1)]
+        for i in range(n // args.batch_count): 
+            batch_index = arr[args.batch_count * i : args.batch_count * (i + 1)]
             batch_index = torch.LongTensor(batch_index).to(device)
             
             inputs = states[batch_index]

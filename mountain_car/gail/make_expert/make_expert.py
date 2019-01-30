@@ -1,53 +1,56 @@
 import gym
-import readchar
 import numpy as np
 
-# # MACROS
-Push_Left = 0
-No_Push = 1
-Push_Right = 2
+demo_count = 5000
 
-# Key mapping
-arrow_keys = {
-    '\x1b[D': Push_Left,
-    '\x1b[B': No_Push,
-    '\x1b[C': Push_Right}
+def idx_to_state(env, state):
+    env_low = env.observation_space.low
+    env_high = env.observation_space.high 
+    env_distance = (env_high - env_low) / 20 
+    position_idx = int((state[0] - env_low[0]) / env_distance[0])
+    velocity_idx = int((state[1] - env_low[1]) / env_distance[1])
+    state_idx = position_idx + velocity_idx * 20
+    return state_idx
 
-env = gym.make('MountainCar-v0')
+def main():    
+    env = gym.make('MountainCar-v0')
 
-trajectories = []
-episode_step = 0
+    q_table = np.load(file="expert_q_table.npy")
+    print("q_table.shape", q_table.shape)
 
-for episode in range(20): # n_trajectories : 20
-    trajectory = []
-    step = 0
+    demonstrations = []
+    episodes, scores = [], []
 
-    env.reset()
-    print("episode_step", episode_step)
+    for episode in range(100000):
+        state = env.reset()
+        temp = []
+        score = 0
 
-    while True: 
-        env.render()
-        print("step", step)
+        while True:
+            # env.render()
+            state_idx = idx_to_state(env, state)
+            action = np.argmax(q_table[state_idx])
+            next_state, reward, done, _ = env.step(action)
 
-        key = readchar.readkey()
-        if key not in arrow_keys.keys():
-            break
+            if done:
+                break
 
-        action = arrow_keys[key]
-        state, reward, done, _ = env.step(action)
+            temp.append((state[0], state[1], action))
 
-        if state[0] >= env.env.goal_position and step > 129: # trajectory_length : 130
-            break
+            score += reward
+            state = next_state
 
-        trajectory.append((state[0], state[1], action))
-        step += 1
+        if score > -120:
+            print('{} episode score is {:.2f}'.format(episode, score))
+            if len(demonstrations) < demo_count:
+                for i in range(len(temp)):
+                    demonstrations.append((temp[i][0], temp[i][1], temp[i][2]))
+            else: break
+        
+    demo = np.array(demonstrations, float)
+    print("demo.shape", demo.shape)
 
-    trajectory_numpy = np.array(trajectory, float)
-    print("trajectory_numpy.shape", trajectory_numpy.shape)
-    episode_step += 1
-    trajectories.append(trajectory)
+    np.save("expert_demo", arr=demo)
 
-np_trajectories = np.array(trajectories, float)
-print("np_trajectories.shape", np_trajectories.shape)
-
-np.save("expert_trajectories", arr=np_trajectories)
+if __name__ == '__main__':
+    main()

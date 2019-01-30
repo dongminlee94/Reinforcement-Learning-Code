@@ -18,6 +18,8 @@ parser.add_argument('--env_name', type=str, default="MountainCar-v0",
                     help='name of the environment to run')
 parser.add_argument('--load_model', type=str, default=None, 
                     help='')
+parser.add_argument('--load_demo_count', type=int, default=5000, 
+                    help='count of demonstrations to load')
 parser.add_argument('--save_path', type=str, default='./save_model/', 
                     help='path to save the model')
 parser.add_argument('--render', action="store_true", default=False, 
@@ -34,14 +36,25 @@ parser.add_argument('--l2_rate', type=float, default=1e-3,
                     help='l2 regularizer coefficient')
 parser.add_argument('--clip_param', type=float, default=0.2, 
                     help='clipping parameter for PPO')
-parser.add_argument('--batch_size', type=int, default=50, 
-                    help='mini-batch size per PPO update')
+parser.add_argument('--min_batch_size', type=int, default=2048, 
+                    help='minimal batch size per PPO update (default: 2048)')
+parser.add_argument('--batch_count', type=int, default=64, 
+                    help='batch count to update')
 parser.add_argument('--seed', type=int, default=500,
                     help='random seed (default: 1)')
 parser.add_argument('--logdir', type=str, default='logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+if args.load_demo_count == 5000:
+    load_demo = './make_expert/expert_demo_5031.npy'
+elif args.load_demo_count == 20000:
+    load_demo = './make_expert/expert_demo_20011.npy'
+elif args.load_demo_count == 35000:
+    load_demo = './make_expert/expert_demo_35011.npy'
+elif args.load_demo_count == 50000:
+    load_demo = './make_expert/expert_demo_50116.npy'
 
 
 def main():
@@ -66,8 +79,8 @@ def main():
                               weight_decay=args.l2_rate) 
     discrim_optim = optim.Adam(discrim.parameters(), lr=args.learning_rate)
     
-    trajectories = np.load(file="./make_expert/expert_trajectories.npy")
-    print("trajectories.shape", trajectories.shape)
+    demonstrations = np.load(load_demo)
+    print("demonstrations.shape", demonstrations.shape)
 
     # writer = SummaryWriter(args.logdir)
 
@@ -85,13 +98,13 @@ def main():
     episodes, scores = [], []
     episode = 0    
 
-    for iter in range(300):
+    for iter in range(1000):
         actor.eval(), critic.eval()
         memory = Memory()
         
         step = 0
 
-        while step < 5000:
+        while step < args.min_batch_size:
             score = 0
             state = env.reset()
             
@@ -133,7 +146,7 @@ def main():
         transitions = memory.sample()
         
         actor.train(), critic.train(), discrim.train()
-        train_discrim(discrim, transitions, discrim_optim, trajectories, args, device)
+        train_discrim(discrim, transitions, discrim_optim, demonstrations, device)
         train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args, device)
         
         # if iter % 20:
