@@ -12,8 +12,8 @@ feature_matrix = np.eye((n_states)) # (400, 400)
 gamma = 0.9
 q_learning_rate = 0.03
 epochs = 20
-theta_learning_rate = 0.01
-enter_by_irl = 10000
+theta_learning_rate = 0.03
+max_iter_num = 10000
 
 def idx_trajectories(env, one_feature):
     env_low = env.observation_space.low     
@@ -58,16 +58,14 @@ def main():
 
     episodes, scores = [], []
     
-    for episode in range(100000):
+    for episode in range(max_iter_num):
         state = env.reset()
         score = 0
 
-        if episode % enter_by_irl == 0 and episode != 0:
+        if episode == 0:
             irl_rewards = maxent.maxent_irl(feature_matrix, n_actions, gamma, 
-                                                trajectories, epochs, theta_learning_rate)
-            global q_table
-            q_table = np.zeros_like(q_table)
-
+                                            trajectories, epochs, theta_learning_rate)
+            
         while True:
             # env.render()
             state_idx = idx_to_state(env, state)
@@ -75,27 +73,30 @@ def main():
             next_state, reward, done, _ = env.step(action)
             
             next_state_idx = idx_to_state(env, next_state)
-            if episode > enter_by_irl:
-                irl_reward = irl_rewards[next_state_idx]
-                update_q_table(state_idx, action, irl_reward, next_state_idx)
-                score += reward
-            else:
-                update_q_table(state_idx, action, reward, next_state_idx)      
-                score += reward
+            irl_reward = irl_rewards[next_state_idx]
+            update_q_table(state_idx, action, irl_reward, next_state_idx)
+            # if episode > enter_by_irl:
+            #     irl_reward = irl_rewards[next_state_idx]
+            #     update_q_table(state_idx, action, irl_reward, next_state_idx)
+            #     score += reward
+            # else:
+            #     update_q_table(state_idx, action, reward, next_state_idx)      
+            #     score += reward
             
+            score += reward
             state = next_state
             
             if done:
                 scores.append(score)
                 episodes.append(episode)
-                pylab.plot(episodes, scores, 'b')
-                pylab.savefig("./learning_curves/maxent_eps_10000.png")
                 break
 
         if episode % 100 == 0:
             score_avg = np.mean(scores)
             print('{} episode score is {:.2f}'.format(episode, score_avg))
-            # np.save("./results/maxent_q_table_eps_10000", arr=q_table)
+            pylab.plot(episodes, scores, 'b')
+            pylab.savefig("./learning_curves/maxent_epochs_10000.png")
+            np.save("./results/maxent_epochs_10000", arr=q_table)
 
 if __name__ == '__main__':
     main()

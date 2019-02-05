@@ -2,18 +2,15 @@ import gym
 import pylab
 import numpy as np
 
-q_table = np.load(file="results/maxent_q_table_eps_106700.npy") # (400, 3)
-one_feature = 20 # number of state per one feature
-gamma = 0.9
-q_learning_rate = 0.03
+q_table = np.load(file="results/expert_q_table.npy") # (400, 3)
 
 def idx_to_state(env, state):
     env_low = env.observation_space.low
     env_high = env.observation_space.high 
-    env_distance = (env_high - env_low) / one_feature 
+    env_distance = (env_high - env_low) / 20 
     position_idx = int((state[0] - env_low[0]) / env_distance[0])
     velocity_idx = int((state[1] - env_low[1]) / env_distance[1])
-    state_idx = position_idx + velocity_idx * one_feature
+    state_idx = position_idx + velocity_idx * 20
     return state_idx
     
 def main():
@@ -37,13 +34,14 @@ def main():
             if done:
                 scores.append(score)
                 episodes.append(episode)
-                pylab.plot(episodes, scores, 'b')
-                pylab.savefig("./learning_curves/maxent_test_1.png")
                 break
 
         if episode % 100 == 0:
             score_avg = np.mean(scores)
             print('{} episode score is {:.2f}'.format(episode, score_avg))
+            pylab.plot(episodes, scores, 'b')
+            pylab.savefig("./learning_curves/maxent_epochs_10000_test_1.png")
+                
 
 if __name__ == '__main__':
     main()

@@ -19,27 +19,33 @@ parser.add_argument('--env_name', type=str, default="MountainCar-v0",
 parser.add_argument('--load_model', type=str, default=None, 
                     help='')
 parser.add_argument('--load_demo_size', type=int, default=5000, 
-                    help='count of demonstrations to load')
+                    help='count of demonstrations to load (default: 5000)')
 parser.add_argument('--save_path', type=str, default='./save_model/', 
                     help='path to save the model')
 parser.add_argument('--render', action="store_true", default=False, 
                     help='if you dont want to render, set this to False')
 parser.add_argument('--gamma', type=float, default=0.99, 
-                    help='discounted factor')
+                    help='discounted factor (default: 0.99)')
 parser.add_argument('--lamda', type=float, default=0.98, 
-                    help='GAE hyper-parameter')
+                    help='GAE hyper-parameter (default: 0.98)')
 parser.add_argument('--hidden_size', type=int, default=50, 
                     help='hidden unit size of actor, critic and discrim networks')
 parser.add_argument('--learning_rate', type=float, default=3e-4, 
-                    help='learning rate of models')
+                    help='learning rate of models (default: 3e-4)')
 parser.add_argument('--l2_rate', type=float, default=1e-3, 
-                    help='l2 regularizer coefficient')
+                    help='l2 regularizer coefficient (default: 1e-3)')
 parser.add_argument('--clip_param', type=float, default=0.2, 
-                    help='clipping parameter for PPO')
-parser.add_argument('--total_sample_size', type=int, default=4096, 
-                    help='total batch to collect before PPO update (default: 4096)')
-parser.add_argument('--batch_size', type=int, default=128, 
+                    help='clipping parameter for PPO (default: 0.2)')
+parser.add_argument('--discrim_update_num', type=int, default=10, 
+                    help='update number of discriminator (default: 1)')
+parser.add_argument('--actor_critic_update_num', type=int, default=10, 
+                    help='update number of actor-critic (default: 1)')
+parser.add_argument('--total_sample_size', type=int, default=2048, 
+                    help='total sample size to collect before PPO update (default: 2048)')
+parser.add_argument('--batch_size', type=int, default=64, 
                     help='batch size to update (default: 128)')
+parser.add_argument('--max_iter_num', type=int, default=100, metavar='N',
+                    help='maximal number of main iterations (default: 500)')
 parser.add_argument('--seed', type=int, default=500,
                     help='random seed (default: 500)')
 parser.add_argument('--logdir', type=str, default='logs',
@@ -95,10 +101,13 @@ def main():
         critic.load_state_dict(ckpt['critic'])
         discrim.load_state_dict(ckpt['discrim'])
 
-    episodes, scores = [], []
+    episodes, scores, iters = [], [], []
     episode = 0    
 
-    for iter in range(1000):
+    print("discrim_update_num", args.discrim_update_num)
+    print("actor_critic_update_num", args.actor_critic_update_num)
+
+    for iter in range(args.max_iter_num):
         actor.eval(), critic.eval()
         memory = Memory()
         
@@ -136,17 +145,26 @@ def main():
             episode += 1
             scores.append(score)
             episodes.append(episode)
+            # iter += 1
+            # iters.append(iter)
+            # scores.append(np.mean(scores))
             pylab.plot(episodes, scores, 'b')
-            pylab.savefig("./learning_curves/gail_train.png")        
-        
+            pylab.savefig("./learning_curves/gail_train.png")    
+            
         score_avg = np.mean(scores)
         print('{} episode score is {:.2f}'.format(episode, score_avg))
         # writer.add_scalar('log/score', float(score_avg), iter)
-        
+
         transitions = memory.sample()
-        
+
         actor.train(), critic.train(), discrim.train()
-        train_discrim(discrim, transitions, discrim_optim, demonstrations, device)
+
+        # exp_acc, gen_acc = train_discrim(discrim, transitions, discrim_optim, demonstrations, args, device)
+        # print("Experts: %.2f%% | Generated: %.2f%%"%(exp_acc*100, gen_acc*100))
+        # if exp_acc > 0.8 and gen_acc > 0.8:
+        #    train_rewards = False    
+        
+        train_discrim(discrim, transitions, discrim_optim, demonstrations, args, device)
         train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args, device)
         
         # if iter % 20:

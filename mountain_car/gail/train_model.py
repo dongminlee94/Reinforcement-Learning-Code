@@ -2,24 +2,30 @@ import torch
 import numpy as np
 
 
-def train_discrim(discrim, transitions, discrim_optim, demonstrations, device):
+def train_discrim(discrim, transitions, discrim_optim, demonstrations, args, device):
     states = torch.stack(transitions.state).to(device)
     actions = torch.Tensor(transitions.action).unsqueeze(1).to(device)
 
     criterion = torch.nn.BCELoss()
 
-    for _ in range(1):
+    for i in range(args.discrim_update_num):
+        
         expert_state_action = torch.Tensor(demonstrations).to(device)
         
-        learner = discrim(torch.cat([states, actions], dim=1))
         expert = discrim(expert_state_action)
+        learner = discrim(torch.cat([states, actions], dim=1))
 
         discrim_loss = criterion(learner, torch.ones((states.shape[0], 1), device=device)) + \
                         criterion(expert, torch.zeros((demonstrations.shape[0], 1), device=device))
-        
+                
         discrim_optim.zero_grad()
         discrim_loss.backward()
         discrim_optim.step()
+
+    exp_acc = ((discrim(expert_state_action) < 0.5).float()).mean()
+    gen_acc = ((discrim(torch.cat([states, actions], dim=1)) > 0.5).float()).mean()
+
+    print("Experts: %.2f%% | Generated: %.2f%%"%(exp_acc*100, gen_acc*100))
 
         
 def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, args, device):
@@ -42,7 +48,7 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
     
     # ----------------------------
     # step 2: get value loss and actor loss and update actor & critic
-    for _ in range(10):
+    for _ in range(args.actor_critic_update_num):
         np.random.shuffle(arr)
         
         for i in range(n // args.batch_size): 
@@ -58,7 +64,7 @@ def train_actor_critic(actor, critic, transitions, actor_optim, critic_optim, ar
             values = critic(inputs)
             clipped_values = oldvalue_samples + \
                              torch.clamp(values - oldvalue_samples,
-                                         -args.clip_param, # 0.2
+                                         -args.clip_param,
                                          args.clip_param)
             critic_loss1 = criterion(clipped_values, returns_samples)
             critic_loss2 = criterion(values, returns_samples)
