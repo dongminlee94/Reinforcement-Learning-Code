@@ -11,5 +11,5 @@ def log_prob_density(x, mu, std):
                      - 0.5 * math.log(2 * math.pi)
     return log_prob_density.sum(1, keepdim=True)
 
-def save_checkpoint(state, filename):#='checkpoint.pth.tar'):
+def save_checkpoint(state, filename):
     torch.save(state, filename)
