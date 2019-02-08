@@ -5,6 +5,8 @@ import numpy as np
 def train_discrim(discrim, transitions, discrim_optim, demonstrations, args, device):
     states = torch.stack(transitions.state).to(device)
     actions = torch.Tensor(transitions.action).unsqueeze(1).to(device)
+    print("states", states.shape)
+    print("actions", actions.shape)
 
     criterion = torch.nn.BCELoss()
 
