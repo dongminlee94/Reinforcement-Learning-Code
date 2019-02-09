@@ -25,7 +25,7 @@ parser.add_argument('--gamma', type=float, default=0.99,
 parser.add_argument('--lamda', type=float, default=0.98, 
                     help='GAE hyper-parameter (default: 0.98)')
 parser.add_argument('--hidden_size', type=int, default=64, 
-                    help='hidden unit size of actor, critic')
+                    help='hidden unit size of actor, critic networks')
 parser.add_argument('--learning_rate', type=float, default=3e-4, 
                     help='learning rate of models (default: 3e-4)')
 parser.add_argument('--l2_rate', type=float, default=1e-3, 
@@ -45,7 +45,6 @@ parser.add_argument('--seed', type=int, default=500,
 parser.add_argument('--logdir', type=str, default='logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def main():
     env = gym.make(args.env_name)
@@ -59,8 +58,8 @@ def main():
     print('state size:', num_inputs) 
     print('action size:', num_actions)
 
-    actor = Actor(num_inputs, num_actions, args).to(device)
-    critic = Critic(num_inputs, args).to(device)
+    actor = Actor(num_inputs, num_actions, args)
+    critic = Critic(num_inputs, args)
 
     actor_optim = optim.Adam(actor.parameters(), lr=args.learning_rate)
     critic_optim = optim.Adam(critic.parameters(), lr=args.learning_rate, 
@@ -130,7 +129,7 @@ def main():
         writer.add_scalar('log/score', float(score_avg), iter)
 
         actor.train(), critic.train()
-        train_model(actor, critic, memory, actor_optim, critic_optim, args, device)
+        train_model(actor, critic, memory, actor_optim, critic_optim, args)
 
         if iter % 100:
             score_avg = int(score_avg)

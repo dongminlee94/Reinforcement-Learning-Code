@@ -48,7 +48,7 @@ parser.add_argument('--seed', type=int, default=500,
 parser.add_argument('--logdir', type=str, default='logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def main():
     env = gym.make(args.env_name)
@@ -62,9 +62,9 @@ def main():
     print('state size:', num_inputs) 
     print('action size:', num_actions)
 
-    actor = Actor(num_inputs, num_actions, args).to(device)
-    critic = Critic(num_inputs, args).to(device)
-    discrim = Discriminator(num_inputs + num_actions, args).to(device)
+    actor = Actor(num_inputs, num_actions, args)
+    critic = Critic(num_inputs, args)
+    discrim = Discriminator(num_inputs + num_actions, args)
 
     actor_optim = optim.Adam(actor.parameters(), lr=args.learning_rate)
     critic_optim = optim.Adam(critic.parameters(), lr=args.learning_rate, 
@@ -142,8 +142,8 @@ def main():
         writer.add_scalar('log/score', float(score_avg), iter)
 
         actor.train(), critic.train(), discrim.train() 
-        train_discrim(discrim, memory, discrim_optim, demonstrations, args, device)
-        train_actor_critic(actor, critic, memory, actor_optim, critic_optim, args, device)
+        train_discrim(discrim, memory, discrim_optim, demonstrations, args)
+        train_actor_critic(actor, critic, memory, actor_optim, critic_optim, args)
 
         if iter % 100:
             score_avg = int(score_avg)

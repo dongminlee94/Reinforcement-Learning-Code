@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-def train_model(actor, critic, memory, actor_optim, critic_optim, args, device):
+def train_model(actor, critic, memory, actor_optim, critic_optim, args):
     memory = np.array(memory) 
     states = np.vstack(memory[:, 0]) 
     actions = list(memory[:, 1]) 
@@ -9,7 +9,7 @@ def train_model(actor, critic, memory, actor_optim, critic_optim, args, device):
     masks = list(memory[:, 3]) 
 
     old_values = critic(torch.Tensor(states))
-    returns, advants = get_gae(rewards, masks, old_values, args, device)
+    returns, advants = get_gae(rewards, masks, old_values, args)
 
     policies = actor(torch.Tensor(states))
     old_policy = policies[range(len(actions)), actions]
@@ -23,7 +23,7 @@ def train_model(actor, critic, memory, actor_optim, critic_optim, args, device):
 
         for i in range(n // args.batch_size): 
             batch_index = arr[args.batch_size * i : args.batch_size * (i + 1)]
-            batch_index = torch.LongTensor(batch_index).to(device)
+            batch_index = torch.LongTensor(batch_index)
             
             inputs = torch.Tensor(states)[batch_index]
             actions_samples = torch.Tensor(actions)[batch_index]
@@ -59,11 +59,11 @@ def train_model(actor, critic, memory, actor_optim, critic_optim, args, device):
             loss.backward()
             actor_optim.step()
 
-def get_gae(rewards, masks, values, args, device):
-    rewards = torch.Tensor(rewards).to(device)
-    masks = torch.Tensor(masks).to(device)
-    returns = torch.zeros_like(rewards).to(device)
-    advants = torch.zeros_like(rewards).to(device)
+def get_gae(rewards, masks, values, args):
+    rewards = torch.Tensor(rewards)
+    masks = torch.Tensor(masks)
+    returns = torch.zeros_like(rewards)
+    advants = torch.zeros_like(rewards)
     
     running_returns = 0
     previous_value = 0
