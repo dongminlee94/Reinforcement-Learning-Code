@@ -26,7 +26,7 @@ parser.add_argument('--gamma', type=float, default=0.99,
 parser.add_argument('--lamda', type=float, default=0.98, 
                     help='GAE hyper-parameter (default: 0.98)')
 parser.add_argument('--hidden_size', type=int, default=64, 
-                    help='hidden unit size of actor, critic and discrim networks')
+                    help='hidden unit size of actor, critic and discrim networks (default: 64)')
 parser.add_argument('--learning_rate', type=float, default=3e-4, 
                     help='learning rate of models (default: 3e-4)')
 parser.add_argument('--l2_rate', type=float, default=1e-3, 

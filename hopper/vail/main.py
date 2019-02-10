@@ -11,10 +11,10 @@ from tensorboardX import SummaryWriter
 
 from utils.utils import *
 from utils.zfilter import ZFilter
-from model import Actor, Critic, Discriminator
-from train_model import train_actor_critic, train_discrim
+from model import Actor, Critic, VDB
+from train_model import train_ppo, train_vdb
 
-parser = argparse.ArgumentParser(description='PyTorch GAIL')
+parser = argparse.ArgumentParser(description='PyTorch VAIL')
 parser.add_argument('--env_name', type=str, default="Hopper-v2", 
                     help='name of the environment to run')
 parser.add_argument('--load_model', type=str, default=None, 
@@ -26,16 +26,22 @@ parser.add_argument('--gamma', type=float, default=0.99,
 parser.add_argument('--lamda', type=float, default=0.98, 
                     help='GAE hyper-parameter (default: 0.98)')
 parser.add_argument('--hidden_size', type=int, default=100, 
-                    help='hidden unit size of actor, critic and discrim networks')
+                    help='hidden unit size of actor, critic and vdb networks (default: 100)')
+parser.add_argument('--z_size', type=int, default=4, 
+                    help='latent vector z unit size of vdb networks (default: 4)')
 parser.add_argument('--learning_rate', type=float, default=3e-4, 
                     help='learning rate of models (default: 3e-4)')
 parser.add_argument('--l2_rate', type=float, default=1e-3, 
                     help='l2 regularizer coefficient (default: 1e-3)')
 parser.add_argument('--clip_param', type=float, default=0.2, 
                     help='clipping parameter for PPO (default: 0.2)')
-parser.add_argument('--discrim_update_num', type=int, default=2, 
-                    help='update number of discriminator (default: 2)')
-parser.add_argument('--actor_critic_update_num', type=int, default=10, 
+parser.add_argument('--alpha_beta', type=float, default=1e-5, 
+                    help='step size to be used in beta term (default: 1e-5)')
+parser.add_argument('--i_c', type=float, default=0.5, 
+                    help='constraint for KL-Divergence upper bound (default: 0.5)')
+parser.add_argument('--vdb_update_num', type=int, default=6, 
+                    help='update number of variational discriminator bottleneck (default: 6)')
+parser.add_argument('--ppo_update_num', type=int, default=10, 
                     help='update number of actor-critic (default: 10)')
 parser.add_argument('--total_sample_size', type=int, default=2048, 
                     help='total sample size to collect before PPO update (default: 2048)')
@@ -48,7 +54,7 @@ parser.add_argument('--seed', type=int, default=500,
 parser.add_argument('--logdir', type=str, default='logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def main():
     env = gym.make(args.env_name)
@@ -62,14 +68,14 @@ def main():
     print('state size:', num_inputs) 
     print('action size:', num_actions)
 
-    actor = Actor(num_inputs, num_actions, args).to(device)
-    critic = Critic(num_inputs, args).to(device)
-    discrim = Discriminator(num_inputs + num_actions, args).to(device)
+    actor = Actor(num_inputs, num_actions, args)
+    critic = Critic(num_inputs, args)
+    vdb = VDB(num_inputs + num_actions, args)
 
     actor_optim = optim.Adam(actor.parameters(), lr=args.learning_rate)
     critic_optim = optim.Adam(critic.parameters(), lr=args.learning_rate, 
                               weight_decay=args.l2_rate) 
-    discrim_optim = optim.Adam(discrim.parameters(), lr=args.learning_rate)
+    vdb_optim = optim.Adam(vdb.parameters(), lr=args.learning_rate)
     
     # load demonstrations
     expert_demo, _ = pickle.load(open('./expert_demo/expert_demo.p', "rb"))
@@ -84,7 +90,7 @@ def main():
 
         actor.load_state_dict(ckpt['actor'])
         critic.load_state_dict(ckpt['critic'])
-        discrim.load_state_dict(ckpt['discrim'])
+        vdb.load_state_dict(ckpt['vdb'])
 
         running_state.rs.n = ckpt['z_filter_n']
         running_state.rs.mean = ckpt['z_filter_m']
@@ -117,7 +123,7 @@ def main():
                 mu, std = actor(torch.Tensor(state).unsqueeze(0))
                 action = get_action(mu, std)[0]
                 next_state, reward, done, _ = env.step(action)
-                irl_reward = get_reward(discrim, state, action)
+                irl_reward = get_reward(vdb, state, action)
 
                 if done:
                     mask = 0
@@ -141,9 +147,9 @@ def main():
         print('{} episode score is {:.2f}'.format(episodes, score_avg))
         writer.add_scalar('log/score', float(score_avg), iter)
 
-        actor.train(), critic.train(), discrim.train() 
-        train_discrim(discrim, memory, discrim_optim, demonstrations, args, device)
-        train_actor_critic(actor, critic, memory, actor_optim, critic_optim, args, device)
+        actor.train(), critic.train(), vdb.train() 
+        train_vdb(vdb, memory, vdb_optim, demonstrations, 0, args)
+        train_ppo(actor, critic, memory, actor_optim, critic_optim, args)
 
         if iter % 100:
             score_avg = int(score_avg)
@@ -157,7 +163,7 @@ def main():
             save_checkpoint({
                 'actor': actor.state_dict(),
                 'critic': critic.state_dict(),
-                'discrim': discrim.state_dict(),
+                'vdb': vdb.state_dict(),
                 'z_filter_n':running_state.rs.n,
                 'z_filter_m': running_state.rs.mean,
                 'z_filter_s': running_state.rs.sum_square,
