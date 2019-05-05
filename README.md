@@ -4,11 +4,13 @@
 
 ### Model-Free Reinforcement Learning
 
-- DQN(Deep Q-Network)
-  - [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/dqn)
+#### DQN(Deep Q-Network)
 
-- REINFORCE(Vanilla Policy Gradient)
-  - [CartPole(Classic control)]()
+- [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/dqn)
+
+#### REINFORCE(Vanilla Policy Gradient)
+
+- [CartPole(Classic control)]()
 
 - A2C(Advantage Actor-Critic)
   - [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/a2c)
