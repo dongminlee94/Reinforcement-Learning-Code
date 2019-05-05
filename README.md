@@ -2,6 +2,8 @@
 
 ## Algorithms
 
+---
+
 ### 01. Model-Free Reinforcement Learning
 
 #### 1. DQN(Deep Q-Network)
@@ -54,6 +56,8 @@
 #### 4. VAIL(Variational Adversarial Imitation Learning)
 
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/vail)
+
+---
 
 ## Reference
 
