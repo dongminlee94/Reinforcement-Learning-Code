@@ -2,54 +2,56 @@
 
 ## Algorithms
 
-### Model-Free Reinforcement Learning
+### 01. Model-Free Reinforcement Learning
 
-#### DQN(Deep Q-Network)
+#### 1. DQN(Deep Q-Network)
 
 - [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/dqn)
 
-#### REINFORCE(Vanilla Policy Gradient)
+#### 2. REINFORCE(Vanilla Policy Gradient)
 
 - [CartPole(Classic control)]()
 
-#### A2C(Advantage Actor-Critic)
+#### 3. A2C(Advantage Actor-Critic)
 
 - [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/a2c)
 
-#### DDPG(Deep Deterministic Policy Gradient)
+#### 4. DDPG(Deep Deterministic Policy Gradient)
 
 - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/ddpg)
 
-#### TNPG(Truncated Natural Policy Gradient)
+#### 5. TNPG(Truncated Natural Policy Gradient)
   
 - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/tnpg)
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/tnpg)
 
-#### TRPO(Trust Region Policy Optimization)
+#### 6. TRPO(Trust Region Policy Optimization)
 
 - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/trpo)
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/trpo)
 
-#### PPO(Proximal Policy Optimization)
+#### 7. PPO(Proximal Policy Optimization)
 
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
 
-### Inverse Reinforcement Learning
+---
 
-#### APP(Apprenticeship Learning via Inverse Reinforcement Learning)
+### 02. Inverse Reinforcement Learning
+
+#### 1. APP(Apprenticeship Learning via Inverse Reinforcement Learning)
 
 - [MountainCar(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mountaincar/app)
 
-#### MaxEnt(Maximum Entropy Inverse Reinforcement Learning)
+#### 2. MaxEnt(Maximum Entropy Inverse Reinforcement Learning)
 
 - [MountainCar(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mountaincar/maxent)
 
-#### GAIL(Generative Adversarial Imitation Learning)
+#### 3. GAIL(Generative Adversarial Imitation Learning)
 
 - [Pendulum(Classic control)]()
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/gail)
 
-#### VAIL(Variational Adversarial Imitation Learning)
+#### 4. VAIL(Variational Adversarial Imitation Learning)
 
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/vail)
 
