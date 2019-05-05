@@ -12,37 +12,46 @@
 
 - [CartPole(Classic control)]()
 
-- A2C(Advantage Actor-Critic)
-  - [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/a2c)
+#### A2C(Advantage Actor-Critic)
 
-- DDPG(Deep Deterministic Policy Gradient)
-  - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/ddpg)
+- [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/a2c)
 
-- TNPG(Truncated Natural Policy Gradient)
-  - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/tnpg)
-  - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/tnpg)
+#### DDPG(Deep Deterministic Policy Gradient)
 
-- TRPO(Trust Region Policy Optimization)
-  - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/trpo)
-  - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/trpo)
+- [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/ddpg)
 
-- PPO(Proximal Policy Optimization)
-  - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
+#### TNPG(Truncated Natural Policy Gradient)
+  
+- [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/tnpg)
+- [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/tnpg)
+
+#### TRPO(Trust Region Policy Optimization)
+
+- [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/trpo)
+- [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/trpo)
+
+#### PPO(Proximal Policy Optimization)
+
+- [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
 
 ### Inverse Reinforcement Learning
 
-- APP(Apprenticeship Learning via Inverse Reinforcement Learning)
-  - [MountainCar(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mountaincar/app)
+#### APP(Apprenticeship Learning via Inverse Reinforcement Learning)
 
-- MaxEnt(Maximum Entropy Inverse Reinforcement Learning)
-  - [MountainCar(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mountaincar/maxent)
+- [MountainCar(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mountaincar/app)
 
-- GAIL(Generative Adversarial Imitation Learning)
-  - [Pendulum(Classic control)]()
-  - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/gail)
+#### MaxEnt(Maximum Entropy Inverse Reinforcement Learning)
 
-- VAIL(Variational Adversarial Imitation Learning)
-  - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/vail)
+- [MountainCar(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mountaincar/maxent)
+
+#### GAIL(Generative Adversarial Imitation Learning)
+
+- [Pendulum(Classic control)]()
+- [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/gail)
+
+#### VAIL(Variational Adversarial Imitation Learning)
+
+- [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/vail)
 
 ## Reference
 
