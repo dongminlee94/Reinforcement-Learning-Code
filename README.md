@@ -2,8 +2,6 @@
 
 ## Algorithms
 
----
-
 ### 01. Model-Free Reinforcement Learning
 
 #### 1. DQN(Deep Q-Network)
@@ -36,7 +34,6 @@
 
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
 
----
 
 ### 02. Inverse Reinforcement Learning
 
