@@ -22,19 +22,19 @@ def get_returns(rewards, masks, gamma):
     return returns
 
 
+def get_loss(actor, returns, states, actions):
+    mu, std = actor(torch.Tensor(states))
+    log_policy = log_prob_density(torch.Tensor(actions), mu, std)
+    returns = returns.unsqueeze(1)
+
+    loss = log_policy * returns
+    loss = loss.mean()
+    return loss
+
 def log_prob_density(x, mu, std):
     log_density = -(x - mu).pow(2) / (2 * std.pow(2)) \
                     - 0.5 * math.log(2 * math.pi)
     return log_density.sum(1, keepdim=True)
-
-def surrogate_loss(actor, returns, states, old_policy, actions):
-    mu, std = actor(torch.Tensor(states))
-    new_policy = log_prob_density(torch.Tensor(actions), mu, std)
-    returns = returns.unsqueeze(1)
-
-    surrogate = torch.exp(new_policy - old_policy) * returns
-    surrogate = surrogate.mean()
-    return surrogate
 
 
 # from openai baseline code
@@ -59,7 +59,7 @@ def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
             break
     return x
 
-def hessian_vector_product(actor, states, p, cg_damping=1e-1):
+def hessian_vector_product(actor, states, p, cg_damping):
     p.detach() 
     kl = kl_divergence(old_actor=actor, new_actor=actor, states=states)
     kl = kl.mean()

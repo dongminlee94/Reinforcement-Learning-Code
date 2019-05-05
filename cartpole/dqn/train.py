@@ -23,6 +23,7 @@ parser.add_argument('--initial_exploration', type=int, default=1000)
 parser.add_argument('--epsilon', type=float, default=1.0)
 parser.add_argument('--epsilon_decay', type=float, default=0.00005)
 parser.add_argument('--update_target', type=int, default=100)
+parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
 parser.add_argument('--goal_score', type=int, default=400)
 parser.add_argument('--logdir', type=str, default='./logs',
@@ -97,7 +98,7 @@ def main():
     running_score = 0
     steps = 0
     
-    for episode in range(1000):
+    for episode in range(args.max_iter_num):
         done = False
         score = 0
 
@@ -120,8 +121,8 @@ def main():
             
             memory.append((state, next_state, action, reward, mask))
 
-            score += reward
             state = next_state
+            score += reward
 
             if steps > args.initial_exploration:
                 args.epsilon -= args.epsilon_decay

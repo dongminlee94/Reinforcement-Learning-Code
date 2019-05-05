@@ -26,6 +26,7 @@ parser.add_argument('--tau', type=float, default=0.001)
 parser.add_argument('--theta', type=float, default=0.15)
 parser.add_argument('--mu', type=float, default=0.0)
 parser.add_argument('--sigma', type=float, default=0.2)
+parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
 parser.add_argument('--goal_score', type=int, default=-300)
 parser.add_argument('--logdir', type=str, default='./logs',
@@ -105,7 +106,7 @@ def main():
     recent_rewards = deque(maxlen=100)
     steps = 0
 
-    for episode in range(1000):
+    for episode in range(args.max_iter_num):
         done = False
         score = 0
 
@@ -125,8 +126,8 @@ def main():
 
             memory.append((state, action, reward, next_state, done))
 
-            score += reward
             state = next_state
+            score += reward
 
             if steps > args.batch_size:
                 minibatch = random.sample(memory, args.batch_size)

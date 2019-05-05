@@ -17,6 +17,7 @@ parser.add_argument('--save_path', default='./save_model/', help='')
 parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--hidden_size', type=int, default=32)
+parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
 parser.add_argument('--goal_score', type=int, default=400)
 parser.add_argument('--logdir', type=str, default='./logs',
@@ -73,7 +74,7 @@ def main():
 
     running_score = 0
 
-    for episode in range(1000):
+    for episode in range(args.max_iter_num):
         done = False
         score = 0
 
@@ -96,8 +97,8 @@ def main():
             transition = [state, next_state, action, reward, mask]
             train_model(actor_critic, optimizer, transition, policies, value)
 
-            score += reward
             state = next_state
+            score += reward
 
         score = score if score == 500.0 else score + 1
         running_score = 0.99 * running_score + 0.01 * score

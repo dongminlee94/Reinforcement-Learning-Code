@@ -6,60 +6,15 @@ def get_action(mu, std):
     action = action.data.numpy()
     return action
 
-
-def get_returns(rewards, masks, gamma):
-    rewards = torch.Tensor(rewards)
-    masks = torch.Tensor(masks)
-    returns = torch.zeros_like(rewards)
-
-    running_returns = 0
-
-    for t in reversed(range(0, len(rewards))):
-        running_returns = rewards[t] + gamma * running_returns * masks[t]
-        returns[t] = running_returns
-
-    returns = (returns - returns.mean()) / returns.std()
-    return returns
-
-
+# logarithm의 property을 이용하여 ratio를 만들 때 사용하기 위한
+# normal distribution의 probability density
 def log_prob_density(x, mu, std):
     log_density = -(x - mu).pow(2) / (2 * std.pow(2)) \
                     - 0.5 * math.log(2 * math.pi)
     return log_density.sum(1, keepdim=True)
 
-def surrogate_loss(actor, returns, states, old_policy, actions):
-    mu, std = actor(torch.Tensor(states))
-    new_policy = log_prob_density(torch.Tensor(actions), mu, std)
-    returns = returns.unsqueeze(1)
 
-    surrogate = torch.exp(new_policy - old_policy) * returns
-    surrogate = surrogate.mean()
-    return surrogate
-
-
-# from openai baseline code
-# https://github.com/openai/baselines/blob/master/baselines/common/cg.py
-def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
-    x = torch.zeros(b.size())
-    r = b.clone()
-    p = b.clone()
-    rdotr = torch.dot(r, r)
-
-    for i in range(nsteps): # nsteps = 10
-        f_Ax = hessian_vector_product(actor, states, p, cg_damping=1e-1)
-        alpha = rdotr / torch.dot(p, f_Ax)
-        x += alpha * p
-        r -= alpha * f_Ax
-        new_rdotr = torch.dot(r, r)
-        betta = new_rdotr / rdotr
-        p = r + betta * p
-        
-        rdotr = new_rdotr
-        if rdotr < residual_tol: # residual_tol = 0.0000000001
-            break
-    return x
-
-def hessian_vector_product(actor, states, p, cg_damping=1e-1):
+def hessian_vector_product(actor, states, p, cg_damping):
     p.detach() 
     kl = kl_divergence(old_actor=actor, new_actor=actor, states=states)
     kl = kl.mean()
@@ -84,7 +39,6 @@ def kl_divergence(old_actor, new_actor, states):
     # be careful of calculating KL-divergence. It is not symmetric metric.
     kl = torch.log(std / std_old) + (std_old.pow(2) + (mu_old - mu).pow(2)) / (2.0 * std.pow(2)) - 0.5
     return kl.sum(1, keepdim=True)
-
 
 def flat_grad(grads):
     grad_flatten = []
