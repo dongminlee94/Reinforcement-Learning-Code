@@ -34,6 +34,7 @@
 
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
 
+---
 
 ### 02. Inverse Reinforcement Learning
 
