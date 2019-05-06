@@ -40,7 +40,7 @@ def train_model(actor, memory, state_size, action_size, args):
     returns = get_returns(rewards, masks, args.gamma)
 
     # ----------------------------
-    # step 2: get gradient of loss and hessian of kl and step direction
+    # step 2: get gradient of loss and hessian of kl and search direction
     mu, std = actor(torch.Tensor(states))
     old_policy = log_prob_density(torch.Tensor(actions), mu, std)
     loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
@@ -49,14 +49,14 @@ def train_model(actor, memory, state_size, action_size, args):
     loss_grad = flat_grad(loss_grad)
     loss = loss.data.numpy()
     
-    step_dir = conjugate_gradient(actor, states, loss_grad.data, nsteps=10)
+    search_dir = conjugate_gradient(actor, states, loss_grad.data, nsteps=10)
     
     # ----------------------------
     # step 3: get step-size alpha and maximal step
-    sHs = 0.5 * (step_dir * hessian_vector_product(actor, states, step_dir)
+    sHs = 0.5 * (search_dir * hessian_vector_product(actor, states, search_dir)
                  ).sum(0, keepdim=True)
     step_size = torch.sqrt(2 * args.max_kl / sHs)[0]
-    maximal_step = step_size * step_dir
+    maximal_step = step_size * search_dir
 
     # ----------------------------    
     # step 4: perform backtracking line search for n iteration
