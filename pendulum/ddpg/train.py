@@ -140,7 +140,7 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | score_avg: {:.2f}'.format(episode, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), score_avg)
+            writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
             ckpt_path = args.save_path + 'model.pth'

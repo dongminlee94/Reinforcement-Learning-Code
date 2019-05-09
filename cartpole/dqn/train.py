@@ -8,7 +8,7 @@ from collections import deque
 import torch
 import torch.optim as optim
 
-from model import QNetwork
+from model import QNet
 from tensorboardX import SummaryWriter
 
 parser = argparse.ArgumentParser()
@@ -81,8 +81,8 @@ def main():
     print('state size:', state_size) 
     print('action size:', action_size)
 
-    net = QNetwork(state_size, action_size, args).to(device)
-    target_net = QNetwork(state_size, action_size, args).to(device)
+    net = QNet(state_size, action_size, args).to(device)
+    target_net = QNet(state_size, action_size, args).to(device)
     net.train(), target_net.train()
     
     optimizer = optim.Adam(net.parameters(), lr=0.001)
@@ -141,7 +141,7 @@ def main():
         if episode % args.log_interval == 0:
             print('{} episode | running_score: {:.2f} | epsilon: {:.2f}'.format(
                 episode, running_score, args.epsilon))
-            writer.add_scalar('log/score', float(score), running_score)
+            writer.add_scalar('log/score', float(score), episode)
 
         if running_score > args.goal_score:
             ckpt_path = args.save_path + 'model.pth'

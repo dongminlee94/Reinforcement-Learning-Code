@@ -64,7 +64,7 @@ def main():
     print('action size:', action_size)
     
     actor = Actor(state_size, action_size, args).to(device)
-    # writer = SummaryWriter(args.logdir)
+    writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
@@ -107,7 +107,7 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), iter)
+            writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
         train_model(actor, memory, args)

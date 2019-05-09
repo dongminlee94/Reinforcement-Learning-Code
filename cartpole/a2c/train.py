@@ -25,14 +25,14 @@ parser.add_argument('--logdir', type=str, default='./logs',
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def train_model(actor_critic, optimizer, transition, policy, value):
+def train_model(actor_critic, optimizer, transition, policies, value):
     state, next_state, action, reward, mask = transition
     state = torch.Tensor(state).to(device)
     next_state = torch.Tensor(next_state).to(device)
     
     criterion = torch.nn.MSELoss()
 
-    log_policy = torch.log(policy[0])[action]
+    log_policy = torch.log(policies[0])[action]
 
     _, next_value = actor_critic(next_state)
     q_value = reward + mask * args.gamma * next_value[0]
@@ -105,14 +105,13 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | running_score: {:.2f}'.format(episode, running_score))
-            writer.add_scalar('log/score', float(score), running_score)
+            writer.add_scalar('log/score', float(score), episode)
 
         if running_score > args.goal_score:
             ckpt_path = args.save_path + 'model.pth'
             torch.save(actor_critic.state_dict(), ckpt_path)
             print('Running score exceeds 400. So end')
             break  
-
 
 if __name__=="__main__":
     main()

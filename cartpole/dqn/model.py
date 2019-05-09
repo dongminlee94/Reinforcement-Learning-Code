@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-class QNetwork(nn.Module):
+class QNet(nn.Module):
     def __init__(self, state_size, action_size, args):
-        super(QNetwork, self).__init__()
+        super(QNet, self).__init__()
         self.fc1 = nn.Linear(state_size, args.hidden_size)
         self.fc2 = nn.Linear(args.hidden_size, action_size)
 

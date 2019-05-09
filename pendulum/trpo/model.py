@@ -9,8 +9,8 @@ class Actor(nn.Module):
         self.fc3 = nn.Linear(args.hidden_size, action_size)
         
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
+        x = torch.tanh(self.fc1(x))
+        x = torch.tanh(self.fc2(x))
         mu = self.fc3(x)
         logstd = torch.zeros_like(mu)
         std = torch.exp(logstd)
