@@ -8,7 +8,7 @@
 
 - [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/dqn)
 
-#### 2. REINFORCE(Vanilla Policy Gradient)
+#### 2. DDQN(Double DQN)
 
 - [CartPole(Classic control)]()
 
