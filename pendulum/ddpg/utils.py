@@ -9,9 +9,6 @@ class OUNoise:
         self.sigma = sigma
         self.X = np.zeros(self.action_size) 
 
-    def reset(self):
-        self.X = np.zeros(self.action_size)
-
     def sample(self):
         dx = self.theta * (self.mu - self.X)
         dx = dx + self.sigma * np.random.randn(len(self.X))
@@ -22,10 +19,8 @@ def init_target_model(actor, critic, actor_target, critic_target):
     actor_target.load_state_dict(actor.state_dict())
     critic_target.load_state_dict(critic.state_dict())
 
-def get_action(actor, state, ou_noise):
-    state = torch.from_numpy(state).float()
-    model_action = actor(state).detach().numpy() 
-    action = model_action + ou_noise.sample() 
+def get_action(plicies, ou_noise): 
+    action = plicies.detach().numpy() + ou_noise.sample() 
     return action
 
 def soft_target_update(actor, critic, actor_target, critic_target, tau):

@@ -83,7 +83,6 @@ def main():
 
     net = QNet(state_size, action_size, args).to(device)
     target_net = QNet(state_size, action_size, args).to(device)
-    net.train(), target_net.train()
     
     optimizer = optim.Adam(net.parameters(), lr=0.001)
     writer = SummaryWriter(args.logdir)
@@ -116,8 +115,12 @@ def main():
             next_state, reward, done, _ = env.step(action)
             
             next_state = np.reshape(next_state, [1, state_size])
-            mask = 0 if done else 1
             reward = reward if not done or score == 499 else -1
+            
+            if done:
+                mask = 0
+            else:
+                mask = 1
             
             memory.append((state, next_state, action, reward, mask))
 
@@ -130,6 +133,7 @@ def main():
 
                 mini_batch = random.sample(memory, args.batch_size)
                 
+                net.train(), target_net.train()
                 train_model(net, target_net, optimizer, mini_batch, args.batch_size)
 
                 if steps % args.update_target:

@@ -11,8 +11,8 @@ class Actor(nn.Module):
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        policy = self.fc3(x)
-        return policy
+        policies = self.fc3(x)
+        return policies
 
 class Critic(nn.Module):
     def __init__(self, state_size, action_size, args):

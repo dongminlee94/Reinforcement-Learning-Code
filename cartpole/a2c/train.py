@@ -27,14 +27,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train_model(actor_critic, optimizer, transition, policies, value):
     state, next_state, action, reward, mask = transition
-    state = torch.Tensor(state).to(device)
-    next_state = torch.Tensor(next_state).to(device)
     
     criterion = torch.nn.MSELoss()
 
     log_policy = torch.log(policies[0])[action]
 
-    _, next_value = actor_critic(next_state)
+    _, next_value = actor_critic(torch.Tensor(next_state))
     q_value = reward + mask * args.gamma * next_value[0]
     advantage = q_value - value[0]
     
@@ -64,7 +62,6 @@ def main():
     print('action size:', action_size)
 
     actor_critic = ActorCritic(state_size, action_size, args).to(device)
-    actor_critic.train()
     
     optimizer = optim.Adam(actor_critic.parameters(), lr=0.001)
     writer = SummaryWriter(args.logdir)
@@ -89,12 +86,17 @@ def main():
             action = get_action(policies)
 
             next_state, reward, done, _ = env.step(action)
-
             next_state = np.reshape(next_state, [1, state_size])
-            mask = 0 if done else 1
             reward = reward if not done or score == 499 else -1
             
+            if done:
+                mask = 0
+            else:
+                mask = 1
+            
             transition = [state, next_state, action, reward, mask]
+
+            actor_critic.train()
             train_model(actor_critic, optimizer, transition, policies, value)
 
             state = next_state

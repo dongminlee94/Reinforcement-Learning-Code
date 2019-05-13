@@ -28,44 +28,42 @@ parser.add_argument('--mu', type=float, default=0.0)
 parser.add_argument('--sigma', type=float, default=0.2)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
-parser.add_argument('--goal_score', type=int, default=-300)
+parser.add_argument('--goal_score', type=int, default=-200)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train_model(actor, critic, actor_target, critic_target, 
-                actor_optimizer, critic_optimizer, minibatch):
-    minibatch = np.array(minibatch).transpose()
-    states = np.vstack(minibatch[0])
-    actions = np.vstack(minibatch[1])
-    rewards = np.vstack(minibatch[2])
-    next_states = np.vstack(minibatch[3])
-    dones = np.vstack(minibatch[4].astype(int))
+                actor_optimizer, critic_optimizer, mini_batch):
+    mini_batch = np.array(mini_batch)
+    states = np.vstack(mini_batch[:, 0])
+    next_states = np.vstack(mini_batch[:, 1])
+    actions = list(mini_batch[:, 2])
+    rewards = list(mini_batch[:, 3])
+    masks = list(mini_batch[:, 4])
 
-    states = torch.Tensor(states).to(device)
     actions = torch.Tensor(actions).to(device)
     rewards = torch.Tensor(rewards).to(device)
-    next_states = torch.Tensor(next_states).to(device)
-    dones = torch.Tensor(dones).to(device)
+    masks = torch.Tensor(masks).to(device)
 
     # critic update
     criterion = torch.nn.MSELoss()
-
-    pred = critic(states, actions)
     
-    next_actions = actor_target(next_states)
-    next_pred = critic_target(next_states, next_actions)
-    target = rewards + (1 - dones) * args.gamma * next_pred
+    value = critic(torch.Tensor(states), actions.squeeze(1))
     
-    critic_loss = criterion(pred, target)
+    next_policies = actor_target(torch.Tensor(next_states))
+    next_value = critic_target(torch.Tensor(next_states), next_policies)
+    target = rewards + masks * args.gamma * next_value
+    
+    critic_loss = criterion(value, target)
     critic_optimizer.zero_grad()
     critic_loss.backward()
     critic_optimizer.step()
 
     # actor update
-    pred_actions = actor(states)
-    actor_loss = critic(states, pred_actions).mean()
+    policies = actor(torch.Tensor(states))
+    actor_loss = critic(torch.Tensor(states), policies).mean()
 
     actor_loss = -actor_loss
     actor_optimizer.zero_grad()
@@ -88,9 +86,6 @@ def main():
     critic = Critic(state_size, action_size, args).to(device)
     critic_target = Critic(state_size, action_size, args).to(device)
     
-    actor.train(), critic.train()
-    actor_target.train(), critic_target.train()
-
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
     writer = SummaryWriter(args.logdir)
@@ -119,20 +114,30 @@ def main():
 
             steps += 1
 
-            action = get_action(actor, state, ou_noise)
-            next_state, reward, done, _ = env.step([action])
+            policies = actor(torch.Tensor(state))
+            action = get_action(policies, ou_noise)
+            
+            next_state, reward, done, _ = env.step(action) 
             next_state = np.reshape(next_state, [1, state_size])
-            reward = float(reward[0, 0])
+            
+            if done:
+                mask = 0
+            else:
+                mask = 1
 
-            memory.append((state, action, reward, next_state, done))
+            memory.append((state, next_state, action, reward, mask))
 
             state = next_state
             score += reward
 
             if steps > args.batch_size:
-                minibatch = random.sample(memory, args.batch_size)
+                mini_batch = random.sample(memory, args.batch_size)
+                
+                actor.train(), critic.train()
+                actor_target.train(), critic_target.train()
                 train_model(actor, critic, actor_target, critic_target, 
-                            actor_optimizer, critic_optimizer, minibatch)
+                            actor_optimizer, critic_optimizer, mini_batch)
+                
                 soft_target_update(actor, critic, actor_target, critic_target, args.tau)
 
             if done:
@@ -147,7 +152,7 @@ def main():
             torch.save({
                 'actor': actor.state_dict(), 
                 'critic': critic.state_dict()}, ckpt_path)
-            print('Recent rewards exceed -300. So end')
+            print('Recent rewards exceed -200. So end')
             break  
 
 if __name__ == '__main__':
