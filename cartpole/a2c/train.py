@@ -36,10 +36,11 @@ def train_model(actor_critic, optimizer, transition, policies, value):
     q_value = reward + mask * args.gamma * next_value[0]
     advantage = q_value - value[0]
     
-    actor_loss = -log_policy * advantage.item()
-    critic_loss = criterion(value[0], q_value.detach())
+    actor_loss = -log_policy * advantage.item() 
+    critic_loss = criterion(q_value.detach(), value[0])
+    entropy = policies[0] * torch.log(policies[0])
 
-    loss = actor_loss + critic_loss
+    loss = actor_loss + critic_loss - 0.1 * entropy.sum()
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -64,7 +65,7 @@ def main():
     actor_critic = ActorCritic(state_size, action_size, args).to(device)
     
     optimizer = optim.Adam(actor_critic.parameters(), lr=0.001)
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
@@ -107,7 +108,7 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | running_score: {:.2f}'.format(episode, running_score))
-            writer.add_scalar('log/score', float(score), episode)
+            # writer.add_scalar('log/score', float(score), episode)
 
         if running_score > args.goal_score:
             ckpt_path = args.save_path + 'model.pth'
