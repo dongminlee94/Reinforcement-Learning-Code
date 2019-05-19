@@ -29,19 +29,18 @@ parser.add_argument('--goal_score', type=int, default=400)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train_model(net, target_net, optimizer, mini_batch, batch_size):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
-    next_states = np.vstack(mini_batch[:, 1])
-    actions = list(mini_batch[:, 2]) 
+    actions = list(mini_batch[:, 1]) 
+    next_states = np.vstack(mini_batch[:, 2])
     rewards = list(mini_batch[:, 3]) 
     masks = list(mini_batch[:, 4]) 
 
-    actions = torch.LongTensor(actions).to(device)
-    rewards = torch.Tensor(rewards).to(device)
-    masks = torch.Tensor(masks).to(device)
+    actions = torch.LongTensor(actions)
+    rewards = torch.Tensor(rewards)
+    masks = torch.Tensor(masks)
     
     criterion = torch.nn.MSELoss()
 
@@ -56,7 +55,7 @@ def train_model(net, target_net, optimizer, mini_batch, batch_size):
     loss.backward()
     optimizer.step()
 
-def get_action(epsilon, q_values, action_size):
+def get_action(q_values, action_size, epsilon):
     if np.random.rand() <= epsilon:
         return random.randrange(action_size)
     else:
@@ -77,14 +76,14 @@ def main():
     print('state size:', state_size) 
     print('action size:', action_size)
 
-    net = QNet(state_size, action_size, args).to(device)
-    target_net = QNet(state_size, action_size, args).to(device)
+    net = QNet(state_size, action_size, args)
+    target_net = QNet(state_size, action_size, args)
     
     optimizer = optim.Adam(net.parameters(), lr=0.001)
-    writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
+    writer = SummaryWriter(args.logdir)
 
     # initialize target model
     update_target_model(net, target_net)
@@ -107,9 +106,10 @@ def main():
             steps += 1
 
             q_values = net(torch.Tensor(state))
-            action = get_action(args.epsilon, q_values, action_size)
+            action = get_action(q_values, action_size, args.epsilon)
+
             next_state, reward, done, _ = env.step(action)
-            
+
             next_state = np.reshape(next_state, [1, state_size])
             reward = reward if not done or score == 499 else -1
             
@@ -118,7 +118,7 @@ def main():
             else:
                 mask = 1
             
-            memory.append((state, next_state, action, reward, mask))
+            memory.append((state, action, next_state, reward, mask))
 
             state = next_state
             score += reward

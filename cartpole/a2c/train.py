@@ -23,10 +23,9 @@ parser.add_argument('--goal_score', type=int, default=400)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train_model(actor_critic, optimizer, transition, policies, value):
-    state, next_state, action, reward, mask = transition
+    state, action, next_state, reward, mask = transition
     
     criterion = torch.nn.MSELoss()
 
@@ -62,13 +61,13 @@ def main():
     print('state size:', state_size)
     print('action size:', action_size)
 
-    actor_critic = ActorCritic(state_size, action_size, args).to(device)
+    actor_critic = ActorCritic(state_size, action_size, args)
     
     optimizer = optim.Adam(actor_critic.parameters(), lr=0.001)
-    # writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
+    writer = SummaryWriter(args.logdir)
 
     running_score = 0
 
@@ -87,6 +86,7 @@ def main():
             action = get_action(policies)
 
             next_state, reward, done, _ = env.step(action)
+
             next_state = np.reshape(next_state, [1, state_size])
             reward = reward if not done or score == 499 else -1
             
@@ -95,7 +95,7 @@ def main():
             else:
                 mask = 1
             
-            transition = [state, next_state, action, reward, mask]
+            transition = [state, action, next_state, reward, mask]
 
             actor_critic.train()
             train_model(actor_critic, optimizer, transition, policies, value)
@@ -108,7 +108,7 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | running_score: {:.2f}'.format(episode, running_score))
-            # writer.add_scalar('log/score', float(score), episode)
+            writer.add_scalar('log/score', float(score), episode)
 
         if running_score > args.goal_score:
             ckpt_path = args.save_path + 'model.pth'

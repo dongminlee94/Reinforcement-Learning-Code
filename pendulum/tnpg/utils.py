@@ -48,13 +48,16 @@ def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
     for i in range(nsteps): # nsteps = 10
         f_Ax = hessian_vector_product(actor, states, p, cg_damping=1e-1)
         alpha = rdotr / torch.dot(p, f_Ax)
+
         x += alpha * p
         r -= alpha * f_Ax
+        
         new_rdotr = torch.dot(r, r)
         betta = new_rdotr / rdotr
+
         p = r + betta * p
-        
         rdotr = new_rdotr
+        
         if rdotr < residual_tol: # residual_tol = 0.0000000001
             break
     return x
@@ -67,7 +70,7 @@ def hessian_vector_product(actor, states, p, cg_damping):
     kl_grad = torch.autograd.grad(kl, actor.parameters(), create_graph=True)
     kl_grad = flat_grad(kl_grad)
 
-    kl_grad_p = (kl_grad * p).sum() 
+    kl_grad_p = (kl_grad * p).sum()
     kl_hessian = torch.autograd.grad(kl_grad_p, actor.parameters())
     kl_hessian = flat_hessian(kl_hessian)
 

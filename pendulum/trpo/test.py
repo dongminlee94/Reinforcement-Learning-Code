@@ -15,7 +15,6 @@ parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--iter', type=int, default=10000)
 parser.add_argument('--log_interval', type=int, default=10)
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__=="__main__":
     env = gym.make(args.env_name)
@@ -27,7 +26,7 @@ if __name__=="__main__":
     print('state size:', state_size)
     print('action size:', action_size)
     
-    actor = Actor(state_size, action_size, args).to(device)
+    actor = Actor(state_size, action_size, args)
     
     if args.load_model is not None:
         pretrained_model_path = os.path.join(os.getcwd(), 'save_model', str(args.load_model))

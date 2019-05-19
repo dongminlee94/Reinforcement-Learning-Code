@@ -16,7 +16,6 @@ parser.add_argument('--hidden_size', type=int, default=128)
 parser.add_argument('--iter', type=int, default=10000)
 parser.add_argument('--log_interval', type=int, default=10)
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def get_action(policies):
     m = Categorical(policies)
@@ -34,7 +33,7 @@ if __name__=="__main__":
     print('state size:', num_inputs)
     print('action size:', num_actions)
 
-    actor_critic = ActorCritic(num_inputs, num_actions, args).to(device)
+    actor_critic = ActorCritic(num_inputs, num_actions, args)
     
     if args.load_model is not None:
         pretrained_model_path = os.path.join(os.getcwd(), 'save_model', str(args.load_model))

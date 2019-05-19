@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 
 import torch
-from model import QNetwork
+from model import QNet
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--env_name', type=str, default="CartPole-v1")
@@ -15,7 +15,6 @@ parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--iter', type=int, default=10000)
 parser.add_argument('--log_interval', type=int, default=10)
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__=="__main__":
     env = gym.make(args.env_name)
@@ -27,7 +26,7 @@ if __name__=="__main__":
     print('state size:', num_inputs) 
     print('action size:', num_actions)
 
-    net = QNetwork(num_inputs, num_actions, args).to(device)
+    net = QNet(num_inputs, num_actions, args)
 
     if args.load_model is not None:
         pretrained_model_path = os.path.join(os.getcwd(), 'save_model', str(args.load_model))

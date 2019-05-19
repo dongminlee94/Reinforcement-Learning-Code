@@ -32,20 +32,19 @@ parser.add_argument('--goal_score', type=int, default=-200)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train_model(actor, critic, actor_target, critic_target, 
                 actor_optimizer, critic_optimizer, mini_batch):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
-    next_states = np.vstack(mini_batch[:, 1])
-    actions = list(mini_batch[:, 2])
+    actions = list(mini_batch[:, 1])
+    next_states = np.vstack(mini_batch[:, 2])
     rewards = list(mini_batch[:, 3])
     masks = list(mini_batch[:, 4])
 
-    actions = torch.Tensor(actions).to(device)
-    rewards = torch.Tensor(rewards).to(device)
-    masks = torch.Tensor(masks).to(device)
+    actions = torch.Tensor(actions)
+    rewards = torch.Tensor(rewards)
+    masks = torch.Tensor(masks)
 
     # critic update
     criterion = torch.nn.MSELoss()
@@ -81,17 +80,17 @@ def main():
     print('state size:', state_size)
     print('action size:', action_size)
     
-    actor = Actor(state_size, action_size, args).to(device)
-    actor_target = Actor(state_size, action_size, args).to(device)
-    critic = Critic(state_size, action_size, args).to(device)
-    critic_target = Critic(state_size, action_size, args).to(device)
+    actor = Actor(state_size, action_size, args)
+    actor_target = Actor(state_size, action_size, args)
+    critic = Critic(state_size, action_size, args)
+    critic_target = Critic(state_size, action_size, args)
     
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
-    writer = SummaryWriter(args.logdir)
 
     if not os.path.isdir(args.save_path):
         os.makedirs(args.save_path)
+    writer = SummaryWriter(args.logdir)
 
     # initialize target model
     init_target_model(actor, critic, actor_target, critic_target)
@@ -118,6 +117,7 @@ def main():
             action = get_action(policies, ou_noise)
             
             next_state, reward, done, _ = env.step(action) 
+
             next_state = np.reshape(next_state, [1, state_size])
             
             if done:
@@ -125,7 +125,7 @@ def main():
             else:
                 mask = 1
 
-            memory.append((state, next_state, action, reward, mask))
+            memory.append((state, action, next_state, reward, mask))
 
             state = next_state
             score += reward
