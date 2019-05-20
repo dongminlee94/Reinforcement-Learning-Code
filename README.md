@@ -4,7 +4,6 @@
 
 - [Deep Q-Network (DQN)](https://daiwk.github.io/assets/dqn.pdf)
 - [Double DQN (DDQN)](https://arxiv.org/pdf/1509.06461.pdf)
-- [Monte Carlo Policy Gradient (REINFORCE)](http://incompleteideas.net/book/RLbook2018.pdf)
 - [Advantage Actor-Critic (A2C)](http://incompleteideas.net/book/RLbook2018.pdf)
 - [Asynchronous Advantage Actor-Critic (A3C)](https://arxiv.org/pdf/1602.01783.pdf)
 - [Deep Deterministic Policy Gradient (DDPG)](https://arxiv.org/pdf/1509.02971.pdf)
@@ -29,10 +28,6 @@
 #### Double DQN (DDQN)
 
 - [CartPole(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/cartpole/ddqn)
-
-#### Monte Carlo Policy Gradient (REINFORCE)
-
-- [CartPole(Classic control)]()
 
 #### Advantage Actor-Critic (A2C)
 
