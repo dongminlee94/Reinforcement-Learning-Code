@@ -88,8 +88,6 @@ def main():
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    if not os.path.isdir(args.save_path):
-        os.makedirs(args.save_path)
     writer = SummaryWriter(args.logdir)
 
     # initialize target model
@@ -148,6 +146,9 @@ def main():
             writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
+            if not os.path.isdir(args.save_path):
+                os.makedirs(args.save_path)
+
             ckpt_path = args.save_path + 'model.pth'
             torch.save({
                 'actor': actor.state_dict(), 

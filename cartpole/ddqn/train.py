@@ -84,11 +84,8 @@ def main():
 
     net = QNet(state_size, action_size, args)
     target_net = QNet(state_size, action_size, args)
-    
     optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-    if not os.path.isdir(args.save_path):
-        os.makedirs(args.save_path)
     writer = SummaryWriter(args.logdir)
 
     # initialize target model
@@ -150,6 +147,9 @@ def main():
             writer.add_scalar('log/score', float(score), episode)
 
         if running_score > args.goal_score:
+            if not os.path.isdir(args.save_path):
+                os.makedirs(args.save_path)
+    
             ckpt_path = args.save_path + 'model.pth'
             torch.save(net.state_dict(), ckpt_path)
             print('Running score exceeds 400. So end')

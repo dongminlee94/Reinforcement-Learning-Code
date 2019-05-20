@@ -62,11 +62,8 @@ def main():
     print('action size:', action_size)
 
     actor_critic = ActorCritic(state_size, action_size, args)
-    
     optimizer = optim.Adam(actor_critic.parameters(), lr=0.001)
 
-    if not os.path.isdir(args.save_path):
-        os.makedirs(args.save_path)
     writer = SummaryWriter(args.logdir)
 
     running_score = 0
@@ -111,6 +108,9 @@ def main():
             writer.add_scalar('log/score', float(score), episode)
 
         if running_score > args.goal_score:
+            if not os.path.isdir(args.save_path):
+                os.makedirs(args.save_path)
+    
             ckpt_path = args.save_path + 'model.pth'
             torch.save(actor_critic.state_dict(), ckpt_path)
             print('Running score exceeds 400. So end')

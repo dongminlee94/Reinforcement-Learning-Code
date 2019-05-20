@@ -121,9 +121,7 @@ def main():
     
     actor = Actor(state_size, action_size, args)
 
-    if not os.path.isdir(args.save_path):
-        os.makedirs(args.save_path)
-    # writer = SummaryWriter(args.logdir)
+    writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -164,14 +162,17 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), iter)
+            writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
         train_model(actor, memory, state_size, action_size, args)
 
         if np.mean(recent_rewards) > args.goal_score:
-            # ckpt_path = args.save_path + 'model.pth'
-            # torch.save(actor.state_dict(), ckpt_path)
+            if not os.path.isdir(args.save_path):
+                os.makedirs(args.save_path)
+            
+            ckpt_path = args.save_path + 'model.pth'
+            torch.save(actor.state_dict(), ckpt_path)
             print('Recent rewards exceed -200. So end')
             break  
 
