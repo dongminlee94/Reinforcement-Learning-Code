@@ -146,11 +146,7 @@ def main():
                 action = get_action(mu, std)[0]
 
                 next_state, reward, done, _ = env.step(action)
-
-                if done:
-                    mask = 0
-                else:
-                    mask = 1
+                mask = 0 if done else 1
 
                 memory.append([state, action, reward, mask])
 

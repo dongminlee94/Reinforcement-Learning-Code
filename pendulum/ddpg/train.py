@@ -42,20 +42,20 @@ def train_model(actor, critic, actor_target, critic_target,
     rewards = list(mini_batch[:, 3])
     masks = list(mini_batch[:, 4])
 
-    actions = torch.Tensor(actions)
-    rewards = torch.Tensor(rewards)
+    actions = torch.Tensor(actions).squeeze(1)
+    rewards = torch.Tensor(rewards).squeeze(1)
     masks = torch.Tensor(masks)
 
     # critic update
     criterion = torch.nn.MSELoss()
     
-    value = critic(torch.Tensor(states), actions.squeeze(1))
+    value = critic(torch.Tensor(states), actions).squeeze(1)
     
     next_policies = actor_target(torch.Tensor(next_states))
-    next_value = critic_target(torch.Tensor(next_states), next_policies)
+    next_value = critic_target(torch.Tensor(next_states), next_policies).squeeze(1)
     target = rewards + masks * args.gamma * next_value
     
-    critic_loss = criterion(value, target)
+    critic_loss = criterion(value, target.detach())
     critic_optimizer.zero_grad()
     critic_loss.backward()
     critic_optimizer.step()
@@ -117,11 +117,7 @@ def main():
             next_state, reward, done, _ = env.step(action) 
 
             next_state = np.reshape(next_state, [1, state_size])
-            
-            if done:
-                mask = 0
-            else:
-                mask = 1
+            mask = 0 if done else 1
 
             memory.append((state, action, next_state, reward, mask))
 

@@ -115,11 +115,7 @@ def main():
 
             next_state = np.reshape(next_state, [1, state_size])
             reward = reward if not done or score == 499 else -1
-            
-            if done:
-                mask = 0
-            else:
-                mask = 1
+            mask = 0 if done else 1
             
             memory.append((state, action, next_state, reward, mask))
 
