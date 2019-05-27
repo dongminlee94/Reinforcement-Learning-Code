@@ -55,7 +55,7 @@
 - [Pendulum(Classic control)]()
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/trpo)
 
-#### Proximal Policy Optimization (PPO)
+#### GAE + Proximal Policy Optimization (PPO)
 
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
 
@@ -93,3 +93,5 @@
 - [Implementation of APP](https://github.com/jangirrishabh/toyCarIRL)
 - [Implementation of MaxEnt](https://github.com/MatthewJA/Inverse-Reinforcement-Learning)
 - [Pytorch implementation of GAIL](https://github.com/Khrylx/PyTorch-RL)
+- [Pytorch implementation of SAC1](https://github.com/vitchyr/rlkit/tree/master/rlkit/torch/sac)
+- [Pytorch implementation of SAC2](https://github.com/pranz24/pytorch-soft-actor-critic)

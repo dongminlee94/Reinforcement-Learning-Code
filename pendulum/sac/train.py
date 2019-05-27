@@ -20,12 +20,8 @@ parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--actor_lr', type=float, default=1e-3)
-parser.add_argument('--critic_lr', type=float, default=1e-3)
-parser.add_argument('--tau', type=float, default=0.001)
-parser.add_argument('--theta', type=float, default=0.15)
-parser.add_argument('--mu', type=float, default=0.0)
-parser.add_argument('--sigma', type=float, default=0.2)
+parser.add_argument('--actor_lr', type=float, default=3e-3)
+parser.add_argument('--critic_lr', type=float, default=3e-3)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
 parser.add_argument('--goal_score', type=int, default=-200)
@@ -33,8 +29,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor, critic, actor_target, critic_target, 
-                actor_optimizer, critic_optimizer, mini_batch):
+def train_model(actor, critic, critic_target, actor_optimizer, critic_optimizer, mini_batch):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1])
@@ -81,7 +76,6 @@ def main():
     print('action size:', action_size)
     
     actor = Actor(state_size, action_size, args)
-    actor_target = Actor(state_size, action_size, args)
     critic = Critic(state_size, action_size, args)
     critic_target = Critic(state_size, action_size, args)
     
@@ -90,9 +84,8 @@ def main():
 
     # writer = SummaryWriter(args.logdir)
 
-    init_target_model(actor, critic, actor_target, critic_target)
+    init_target_model(critic, critic_target)
 
-    ou_noise = OUNoise(action_size, args.theta, args.mu, args.sigma)
     memory = deque(maxlen=10000)
     recent_rewards = deque(maxlen=100)
     steps = 0
@@ -110,8 +103,8 @@ def main():
 
             steps += 1
 
-            policies = actor(torch.Tensor(state))
-            action = get_action(policies, ou_noise)
+            mu, std = actor(torch.Tensor(state))
+            action = get_action(mu, std)
             
             next_state, reward, done, _ = env.step(action) 
 
@@ -126,28 +119,27 @@ def main():
             if steps > args.batch_size:
                 mini_batch = random.sample(memory, args.batch_size)
                 
-                actor.train(), critic.train()
-                actor_target.train(), critic_target.train()
-                train_model(actor, critic, actor_target, critic_target, 
+                actor.train(), critic.train(), critic_target.train()
+                train_model(actor, critic, critic_target, 
                             actor_optimizer, critic_optimizer, mini_batch)
                 
-                soft_target_update(actor, critic, actor_target, critic_target, args.tau)
+                soft_target_update(actor, critic, critic_target, args.tau)
 
             if done:
                 recent_rewards.append(score)
 
         if episode % args.log_interval == 0:
             print('{} episode | score_avg: {:.2f}'.format(episode, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), episode)
+    #         writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):
                 os.makedirs(args.save_path)
 
-            # ckpt_path = args.save_path + 'model.pth'
-            # torch.save({
-            #     'actor': actor.state_dict(), 
-            #     'critic': critic.state_dict()}, ckpt_path)
+            ckpt_path = args.save_path + 'model.pth'
+            torch.save({
+                'actor': actor.state_dict(), 
+                'critic': critic.state_dict()}, ckpt_path)
             print('Recent rewards exceed -200. So end')
             break  
 

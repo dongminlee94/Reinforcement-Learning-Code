@@ -1,8 +1,10 @@
 import math
 import torch
+from torch.distributions import Normal
 
 def get_action(mu, std):
-    action = torch.normal(mu, std)
+    normal = Normal(mu, std)
+    action = normal.sample()
     action = action.data.numpy()
     return action
 

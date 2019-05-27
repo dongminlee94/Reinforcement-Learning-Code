@@ -121,7 +121,7 @@ def main():
     
     actor = Actor(state_size, action_size, args)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -158,7 +158,7 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), iter)
+            # writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
         train_model(actor, memory, state_size, action_size, args)
