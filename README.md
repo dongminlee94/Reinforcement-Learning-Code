@@ -11,7 +11,7 @@
 - [Trust Region Policy Optimization (TRPO)](https://arxiv.org/pdf/1502.05477.pdf)
 - [Generalized Advantage Estimator (GAE)](https://arxiv.org/pdf/1506.02438.pdf)
 - [Proximal Policy Optimization (PPO)](https://arxiv.org/pdf/1707.06347.pdf)
-- [Soft Actor-Critic (SAC)](https://arxiv.org/pdf/1801.01290.pdf)
+- [Soft Actor-Critic (SAC)](https://arxiv.org/pdf/1812.05905.pdf)
 - [Apprenticeship Learning via Inverse Reinforcement Learning (APP)](http://people.eecs.berkeley.edu/~russell/classes/cs294/s11/readings/Abbeel+Ng:2004.pdf)
 - [Maximum Entropy Inverse Reinforcement Learning (MaxEnt)](http://new.aaai.org/Papers/AAAI/2008/AAAI08-227.pdf)
 - [Generative Adversarial Imitation Learning (GAIL)](https://papers.nips.cc/paper/6391-generative-adversarial-imitation-learning.pdf)
