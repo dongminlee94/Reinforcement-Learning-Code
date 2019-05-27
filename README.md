@@ -57,11 +57,13 @@
 
 #### GAE + Proximal Policy Optimization (PPO)
 
+- [Pendulum(Classic control)]()
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
 
 #### Soft Actor-Critic (SAC)
 
 - [Pendulum(Classic control)]()
+- [Hopper(MoJoCo)]()
 
 ---
 
