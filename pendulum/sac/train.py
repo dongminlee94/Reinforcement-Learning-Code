@@ -41,7 +41,7 @@ def train_model(actor, critic, critic_target, actor_optimizer, critic_optimizer,
     rewards = torch.Tensor(rewards).squeeze(1)
     masks = torch.Tensor(masks)
 
-    # critic update
+    # update critic 
     criterion = torch.nn.MSELoss()
     
     value = critic(torch.Tensor(states), actions).squeeze(1)
@@ -55,7 +55,7 @@ def train_model(actor, critic, critic_target, actor_optimizer, critic_optimizer,
     critic_loss.backward()
     critic_optimizer.step()
 
-    # actor update
+    # update actor 
     policies = actor(torch.Tensor(states))
     actor_loss = critic(torch.Tensor(states), policies).mean()
 

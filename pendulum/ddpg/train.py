@@ -46,7 +46,7 @@ def train_model(actor, critic, actor_target, critic_target,
     rewards = torch.Tensor(rewards).squeeze(1)
     masks = torch.Tensor(masks)
 
-    # critic update
+    # update critic 
     criterion = torch.nn.MSELoss()
     
     value = critic(torch.Tensor(states), actions).squeeze(1)
@@ -60,7 +60,7 @@ def train_model(actor, critic, actor_target, critic_target,
     critic_loss.backward()
     critic_optimizer.step()
 
-    # actor update
+    # update actor 
     policies = actor(torch.Tensor(states))
     actor_loss = critic(torch.Tensor(states), policies).mean()
 
@@ -88,7 +88,7 @@ def main():
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    # writer = SummaryWriter(args.logdir)
+    writer = SummaryWriter(args.logdir)
 
     init_target_model(actor, critic, actor_target, critic_target)
 
@@ -138,16 +138,16 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | score_avg: {:.2f}'.format(episode, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), episode)
+            writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):
                 os.makedirs(args.save_path)
 
-            # ckpt_path = args.save_path + 'model.pth'
-            # torch.save({
-            #     'actor': actor.state_dict(), 
-            #     'critic': critic.state_dict()}, ckpt_path)
+            ckpt_path = args.save_path + 'model.pth'
+            torch.save({
+                'actor': actor.state_dict(), 
+                'critic': critic.state_dict()}, ckpt_path)
             print('Recent rewards exceed -200. So end')
             break  
 

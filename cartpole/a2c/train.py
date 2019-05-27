@@ -7,7 +7,7 @@ import torch
 import torch.optim as optim
 from torch.distributions import Categorical
 
-from model import ActorCritic
+from model import Actor, Critic
 from tensorboardX import SummaryWriter
 
 parser = argparse.ArgumentParser()
@@ -16,7 +16,9 @@ parser.add_argument('--load_model', type=str, default=None)
 parser.add_argument('--save_path', default='./save_model/', help='')
 parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
-parser.add_argument('--hidden_size', type=int, default=32)
+parser.add_argument('--hidden_size', type=int, default=64)
+parser.add_argument('--actor_lr', type=float, default=1e-4)
+parser.add_argument('--critic_lr', type=float, default=1e-3)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
 parser.add_argument('--goal_score', type=int, default=400)
@@ -24,25 +26,32 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor_critic, optimizer, transition, policies, value):
+def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, policies):
     state, action, next_state, reward, mask = transition
     
+    # critic update
     criterion = torch.nn.MSELoss()
-
-    log_policy = torch.log(policies[0])[action]
-
-    _, next_value = actor_critic(torch.Tensor(next_state))
-    q_value = reward + mask * args.gamma * next_value[0]
-    advantage = q_value - value[0]
     
-    actor_loss = -log_policy * advantage.item() 
+    value = critic(torch.Tensor(state))
+    
+    next_value = critic(torch.Tensor(next_state))
+    q_value = reward + mask * args.gamma * next_value[0]
+    
     critic_loss = criterion(value[0], q_value.detach())
-    entropy = policies[0] * torch.log(policies[0])
+    critic_optimizer.zero_grad()
+    critic_loss.backward()
+    critic_optimizer.step()
 
-    loss = actor_loss + critic_loss - 0.1 * entropy.sum()
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+    # actor update
+    log_policy = torch.log(policies[0])[action]
+    advantage = q_value - value[0]
+    m = Categorical(policies)
+    entropy = m.entropy()
+
+    actor_loss = -log_policy * advantage.item() + 0.1 * entropy
+    actor_optimizer.zero_grad()
+    actor_loss.backward()
+    actor_optimizer.step()
 
 def get_action(policies):
     m = Categorical(policies)
@@ -61,8 +70,11 @@ def main():
     print('state size:', state_size)
     print('action size:', action_size)
 
-    actor_critic = ActorCritic(state_size, action_size, args)
-    optimizer = optim.Adam(actor_critic.parameters(), lr=0.001)
+    actor = Actor(state_size, action_size, args)
+    critic = Critic(state_size, args)
+
+    actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
+    critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
     writer = SummaryWriter(args.logdir)
 
@@ -79,7 +91,7 @@ def main():
             if args.render:
                 env.render()
 
-            policies, value = actor_critic(torch.Tensor(state))
+            policies = actor(torch.Tensor(state))
             action = get_action(policies)
 
             next_state, reward, done, _ = env.step(action)
@@ -90,8 +102,8 @@ def main():
             
             transition = [state, action, next_state, reward, mask]
 
-            actor_critic.train()
-            train_model(actor_critic, optimizer, transition, policies, value)
+            actor.train(), critic.train()
+            train_model(actor, critic, actor_optimizer, critic_optimizer, transition, policies)
 
             state = next_state
             score += reward
@@ -108,7 +120,9 @@ def main():
                 os.makedirs(args.save_path)
     
             ckpt_path = args.save_path + 'model.pth'
-            torch.save(actor_critic.state_dict(), ckpt_path)
+            torch.save({
+                'actor': actor.state_dict(), 
+                'critic': critic.state_dict()}, ckpt_path)
             print('Running score exceeds 400. So end')
             break  
 

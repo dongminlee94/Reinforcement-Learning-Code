@@ -3,8 +3,8 @@ import torch
 from torch.distributions import Normal
 
 def get_action(mu, std):
-    normal = Normal(mu, std)
-    action = normal.sample()
+    m = Normal(mu, std)
+    action = m.sample()
     action = action.data.numpy()
     return action
 

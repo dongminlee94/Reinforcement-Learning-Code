@@ -21,12 +21,12 @@ if __name__=="__main__":
     env.seed(500)
     torch.manual_seed(500)
 
-    num_inputs = env.observation_space.shape[0]
-    num_actions = env.action_space.n
-    print('state size:', num_inputs) 
-    print('action size:', num_actions)
+    state_size = env.observation_space.shape[0]
+    action_size = env.action_space.n
+    print('state size:', state_size) 
+    print('action size:', action_size)
 
-    net = QNet(num_inputs, num_actions, args)
+    net = QNet(state_size, action_size, args)
 
     if args.load_model is not None:
         pretrained_model_path = os.path.join(os.getcwd(), 'save_model', str(args.load_model))
@@ -40,7 +40,7 @@ if __name__=="__main__":
         score = 0
 
         state = env.reset()
-        state = np.reshape(state, [1, num_inputs])
+        state = np.reshape(state, [1, state_size])
 
         while not done:
             if args.render:
@@ -53,7 +53,8 @@ if __name__=="__main__":
             action = action.numpy()[0]
 
             next_state, reward, done, _ = env.step(action)
-            next_state = np.reshape(next_state, [1, num_inputs])            
+            
+            next_state = np.reshape(next_state, [1, state_size])            
             reward = reward if not done or score == 499 else -1
             
             score += reward
