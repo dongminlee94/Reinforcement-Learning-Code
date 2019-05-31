@@ -12,6 +12,7 @@ class Actor(nn.Module):
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
         policies = torch.softmax(self.fc3(x), dim=1)
+
         return policies
 
 class Critic(nn.Module):
@@ -25,4 +26,5 @@ class Critic(nn.Module):
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
         value = self.fc3(x)
+        
         return value

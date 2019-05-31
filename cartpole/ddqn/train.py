@@ -86,10 +86,9 @@ def main():
     target_net = QNet(state_size, action_size, args)
     optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-    writer = SummaryWriter(args.logdir)
-
-    # initialize target model
     update_target_model(net, target_net)
+    
+    writer = SummaryWriter(args.logdir)
 
     memory = deque(maxlen=10000)
     running_score = 0

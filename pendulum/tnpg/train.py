@@ -21,7 +21,7 @@ parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--total_sample_size', type=int, default=2048)
 parser.add_argument('--log_interval', type=int, default=5)
-parser.add_argument('--goal_score', type=int, default=-200)
+parser.add_argument('--goal_score', type=int, default=-300)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
@@ -64,7 +64,7 @@ def main():
     
     actor = Actor(state_size, action_size, args)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -92,7 +92,7 @@ def main():
                 mask = 0 if done else 1
 
                 memory.append([state, action, reward, mask])
-
+                
                 state = next_state
                 score += reward
 
@@ -101,7 +101,7 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), iter)
+            # writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
         train_model(actor, memory, args)
@@ -112,7 +112,7 @@ def main():
             
             ckpt_path = args.save_path + 'model.pth'
             torch.save(actor.state_dict(), ckpt_path)
-            print('Recent rewards exceed -200. So end')
+            print('Recent rewards exceed -300. So end')
             break  
 
 if __name__ == '__main__':

@@ -5,8 +5,7 @@ from torch.distributions import Normal
 def get_action(mu, std):
     m = Normal(mu, std)
     action = m.sample()
-    action = action.data.numpy()
-    return action
+    return action.data.numpy()
 
 
 def get_returns(rewards, masks, gamma):

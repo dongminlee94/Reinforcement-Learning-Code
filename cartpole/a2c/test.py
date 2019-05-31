@@ -33,14 +33,12 @@ if __name__=="__main__":
     print('state size:', state_size)
     print('action size:', action_size)
 
-    actor_net = Actor(state_size, action_size, args)
-    critic_net = Critic(state_size, args)
+    actor = Actor(state_size, action_size, args)
     
     if args.load_model is not None:
         pretrained_model_path = os.path.join(os.getcwd(), 'save_model', str(args.load_model))
         pretrained_model = torch.load(pretrained_model_path)
-        actor_net.load_state_dict(pretrained_model['actor'])
-        critic_net.load_state_dict(pretrained_model['critic'])
+        actor.load_state_dict(pretrained_model)
 
     steps = 0
     
@@ -56,7 +54,7 @@ if __name__=="__main__":
                 env.render()
 
             steps += 1
-            policies = actor_net(torch.Tensor(state))
+            policies = actor(torch.Tensor(state))
             action = get_action(policies)
             
             next_state, reward, done, _ = env.step(action)

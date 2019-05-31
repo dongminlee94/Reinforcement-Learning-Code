@@ -18,24 +18,25 @@ class Actor(nn.Module):
         x = torch.relu(self.fc2(x))
 
         mu = self.fc3(x)
-        logstd = self.fc4(x)
+        log_std = self.fc4(x)
         
-        logstd = torch.clamp(logstd, min=self.log_std_min, max=self.log_std_max)
-        std = torch.exp(logstd)
+        log_std = torch.clamp(log_std, min=self.log_std_min, max=self.log_std_max)
+        std = torch.exp(log_std)
 
         return mu, std
+
 
 class Critic(nn.Module):
     def __init__(self, state_size, action_size, args):
         super(Critic, self).__init__()
 
         # Q1 architecture
-        self.fc1 = nn.Linear(state_size, args.hidden_size)
+        self.fc1 = nn.Linear(state_size + action_size, args.hidden_size)
         self.fc2 = nn.Linear(args.hidden_size, args.hidden_size)
         self.fc3 = nn.Linear(args.hidden_size, 1)
 
         # Q2 architecture
-        self.fc4 = nn.Linear(state_size, args.hidden_size)
+        self.fc4 = nn.Linear(state_size + action_size, args.hidden_size)
         self.fc5 = nn.Linear(args.hidden_size, args.hidden_size)
         self.fc6 = nn.Linear(args.hidden_size, 1)
 

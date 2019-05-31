@@ -20,16 +20,20 @@ parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--actor_lr', type=float, default=3e-3)
-parser.add_argument('--critic_lr', type=float, default=3e-3)
+parser.add_argument('--actor_lr', type=float, default=1e-3)
+parser.add_argument('--critic_lr', type=float, default=1e-3)
+parser.add_argument('--alpha_lr', type=float, default=1e-4)
+parser.add_argument('--tau', type=float, default=0.005)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
-parser.add_argument('--goal_score', type=int, default=-200)
+parser.add_argument('--goal_score', type=int, default=-300)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor, critic, critic_target, actor_optimizer, critic_optimizer, mini_batch):
+def train_model(actor, critic, critic_target, mini_batch, 
+                target_entropy, log_alpha, alpha, args,
+                actor_optimizer, critic_optimizer, alpha_optimizer):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1])
@@ -44,32 +48,54 @@ def train_model(actor, critic, critic_target, actor_optimizer, critic_optimizer,
     # update critic 
     criterion = torch.nn.MSELoss()
     
-    value = critic(torch.Tensor(states), actions).squeeze(1)
+    value1, value2 = critic(torch.Tensor(states), actions) # Two Q-functions
+
+    mu, std = actor(torch.Tensor(next_states))
+    next_policy, next_log_prob = eval_action(mu, std)
+    next_value1, next_value2 = critic_target(torch.Tensor(next_states), next_policy)
     
-    next_policies = actor_target(torch.Tensor(next_states))
-    next_value = critic_target(torch.Tensor(next_states), next_policies).squeeze(1)
-    target = rewards + masks * args.gamma * next_value
-    
-    critic_loss = criterion(value, target.detach())
+    min_next_value = torch.min(next_value1, next_value2)
+    min_next_value = min_next_value.squeeze(1) - alpha * next_log_prob.squeeze(1)
+    target = rewards + masks * args.gamma * min_next_value
+
+    critic_loss1 = criterion(value1.squeeze(1), target.detach()) # Equation 5 
     critic_optimizer.zero_grad()
-    critic_loss.backward()
+    critic_loss1.backward()
+    critic_optimizer.step()
+
+    critic_loss2 = criterion(value2.squeeze(1), target.detach()) # Equation 5 
+    critic_optimizer.zero_grad()
+    critic_loss2.backward()
     critic_optimizer.step()
 
     # update actor 
-    policies = actor(torch.Tensor(states))
-    actor_loss = critic(torch.Tensor(states), policies).mean()
-
-    actor_loss = -actor_loss
+    mu, std = actor(torch.Tensor(states))
+    policy, log_prob = eval_action(mu, std)
+    
+    value1, value2 = critic(torch.Tensor(states), policy)
+    min_value = torch.min(value1, value2)
+    
+    actor_loss = ((alpha * log_prob) - min_value).mean() # Equation 9 
     actor_optimizer.zero_grad()
     actor_loss.backward()
     actor_optimizer.step()
+
+    # update alpha
+    alpha_loss = -(log_alpha * (log_prob + target_entropy).detach()).mean() # Equation 18
+    alpha_optimizer.zero_grad()
+    alpha_loss.backward()
+    alpha_optimizer.step()
+
+    alpha = torch.exp(log_alpha)
+    
+    return alpha
 
     
 def main():
     env = gym.make(args.env_name)
     env.seed(500)
     torch.manual_seed(500)
-
+    
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.shape[0]
     print('state size:', state_size)
@@ -82,9 +108,15 @@ def main():
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    # writer = SummaryWriter(args.logdir)
-
-    init_target_model(critic, critic_target)
+    hard_target_update(critic, critic_target)
+    
+    # initialize automatic entropy tuning
+    target_entropy = -torch.prod(torch.Tensor(action_size)).item()
+    log_alpha = torch.zeros(1, requires_grad=True)
+    alpha_optimizer = optim.Adam([log_alpha], lr=args.alpha_lr)
+    alpha = torch.exp(log_alpha)
+    
+    writer = SummaryWriter(args.logdir)
 
     memory = deque(maxlen=10000)
     recent_rewards = deque(maxlen=100)
@@ -120,27 +152,26 @@ def main():
                 mini_batch = random.sample(memory, args.batch_size)
                 
                 actor.train(), critic.train(), critic_target.train()
-                train_model(actor, critic, critic_target, 
-                            actor_optimizer, critic_optimizer, mini_batch)
+                alpha = train_model(actor, critic, critic_target, mini_batch, 
+                                    target_entropy, log_alpha, alpha, args,
+                                    actor_optimizer, critic_optimizer, alpha_optimizer)
                 
-                soft_target_update(actor, critic, critic_target, args.tau)
+                soft_target_update(critic, critic_target, args.tau)
 
             if done:
                 recent_rewards.append(score)
 
         if episode % args.log_interval == 0:
             print('{} episode | score_avg: {:.2f}'.format(episode, np.mean(recent_rewards)))
-    #         writer.add_scalar('log/score', float(score), episode)
+            writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):
                 os.makedirs(args.save_path)
 
             ckpt_path = args.save_path + 'model.pth'
-            torch.save({
-                'actor': actor.state_dict(), 
-                'critic': critic.state_dict()}, ckpt_path)
-            print('Recent rewards exceed -200. So end')
+            torch.save(actor.state_dict(), ckpt_path)
+            print('Recent rewards exceed -300. So end')
             break  
 
 if __name__ == '__main__':

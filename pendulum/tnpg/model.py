@@ -11,7 +11,9 @@ class Actor(nn.Module):
     def forward(self, x):
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
+
         mu = self.fc3(x)
-        logstd = torch.zeros_like(mu)
-        std = torch.exp(logstd)
+        log_std = torch.zeros_like(mu)
+        std = torch.exp(log_std)
+        
         return mu, std

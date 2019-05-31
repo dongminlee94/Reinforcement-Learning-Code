@@ -28,7 +28,7 @@ parser.add_argument('--mu', type=float, default=0.0)
 parser.add_argument('--sigma', type=float, default=0.2)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
-parser.add_argument('--goal_score', type=int, default=-200)
+parser.add_argument('--goal_score', type=int, default=-300)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
@@ -51,8 +51,8 @@ def train_model(actor, critic, actor_target, critic_target,
     
     value = critic(torch.Tensor(states), actions).squeeze(1)
     
-    next_policies = actor_target(torch.Tensor(next_states))
-    next_value = critic_target(torch.Tensor(next_states), next_policies).squeeze(1)
+    next_policy = actor_target(torch.Tensor(next_states))
+    next_value = critic_target(torch.Tensor(next_states), next_policy).squeeze(1)
     target = rewards + masks * args.gamma * next_value
     
     critic_loss = criterion(value, target.detach())
@@ -61,8 +61,8 @@ def train_model(actor, critic, actor_target, critic_target,
     critic_optimizer.step()
 
     # update actor 
-    policies = actor(torch.Tensor(states))
-    actor_loss = critic(torch.Tensor(states), policies).mean()
+    policy = actor(torch.Tensor(states))
+    actor_loss = critic(torch.Tensor(states), policy).mean()
 
     actor_loss = -actor_loss
     actor_optimizer.zero_grad()
@@ -88,11 +88,11 @@ def main():
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    writer = SummaryWriter(args.logdir)
-
-    init_target_model(actor, critic, actor_target, critic_target)
-
+    hard_target_update(actor, critic, actor_target, critic_target)
     ou_noise = OUNoise(action_size, args.theta, args.mu, args.sigma)
+
+    writer = SummaryWriter(args.logdir)
+    
     memory = deque(maxlen=10000)
     recent_rewards = deque(maxlen=100)
     steps = 0
@@ -110,8 +110,8 @@ def main():
 
             steps += 1
 
-            policies = actor(torch.Tensor(state))
-            action = get_action(policies, ou_noise)
+            policy = actor(torch.Tensor(state))
+            action = get_action(policy, ou_noise)
             
             next_state, reward, done, _ = env.step(action) 
 
@@ -145,10 +145,8 @@ def main():
                 os.makedirs(args.save_path)
 
             ckpt_path = args.save_path + 'model.pth'
-            torch.save({
-                'actor': actor.state_dict(), 
-                'critic': critic.state_dict()}, ckpt_path)
-            print('Recent rewards exceed -200. So end')
+            torch.save(actor.state_dict(), ckpt_path)
+            print('Recent rewards exceed -300. So end')
             break  
 
 if __name__ == '__main__':

@@ -120,9 +120,7 @@ def main():
                 os.makedirs(args.save_path)
     
             ckpt_path = args.save_path + 'model.pth'
-            torch.save({
-                'actor': actor.state_dict(), 
-                'critic': critic.state_dict()}, ckpt_path)
+            torch.save(actor.state_dict(), ckpt_path)
             print('Running score exceeds 400. So end')
             break  
 

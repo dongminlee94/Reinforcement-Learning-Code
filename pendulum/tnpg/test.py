@@ -49,8 +49,9 @@ if __name__=="__main__":
 
             mu, std = actor(torch.Tensor(state).unsqueeze(0))
             action = get_action(mu, std)[0]
-            next_state, reward, done, _ = env.step(action)
 
+            next_state, reward, done, _ = env.step(action)
+            print("reward", reward)
             state = next_state
             score += reward
 

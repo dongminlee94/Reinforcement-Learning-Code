@@ -15,12 +15,12 @@ class OUNoise:
         self.X = self.X + dx
         return self.X
 
-def init_target_model(actor, critic, actor_target, critic_target):
+def hard_target_update(actor, critic, actor_target, critic_target):
     actor_target.load_state_dict(actor.state_dict())
     critic_target.load_state_dict(critic.state_dict())
 
-def get_action(plicies, ou_noise): 
-    action = plicies.detach().numpy() + ou_noise.sample() 
+def get_action(policy, ou_noise): 
+    action = policy.detach().numpy() + ou_noise.sample() 
     return action
 
 def soft_target_update(actor, critic, actor_target, critic_target, tau):

@@ -22,7 +22,7 @@ parser.add_argument('--max_kl', type=float, default=1e-2)
 parser.add_argument('--max_iter_num', type=int, default=500)
 parser.add_argument('--total_sample_size', type=int, default=2048)
 parser.add_argument('--log_interval', type=int, default=5)
-parser.add_argument('--goal_score', type=int, default=-200)
+parser.add_argument('--goal_score', type=int, default=-300)
 parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
@@ -169,7 +169,7 @@ def main():
             
             ckpt_path = args.save_path + 'model.pth'
             torch.save(actor.state_dict(), ckpt_path)
-            print('Recent rewards exceed -200. So end')
+            print('Recent rewards exceed -300. So end')
             break  
 
 if __name__ == '__main__':

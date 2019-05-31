@@ -51,7 +51,7 @@ def train_model(net, target_net, optimizer, mini_batch, batch_size):
     # get target Q-value
     target_next_q_values = target_net(torch.Tensor(next_states)).squeeze(1)
     target_q_value = rewards + masks * args.gamma * target_next_q_values.max(1)[0]
-
+    
     loss = criterion(q_value, target_q_value.detach())
     optimizer.zero_grad()
     loss.backward()
@@ -82,11 +82,10 @@ def main():
     target_net = QNet(state_size, action_size, args)
     optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-    writer = SummaryWriter(args.logdir)
-
-    # initialize target model
     update_target_model(net, target_net)
 
+    writer = SummaryWriter(args.logdir)
+    
     memory = deque(maxlen=10000)
     running_score = 0
     steps = 0
