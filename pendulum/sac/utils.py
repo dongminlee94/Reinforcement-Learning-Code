@@ -17,9 +17,9 @@ def eval_action(mu, std, epsilon=1e-6):
     # Enforcing Action Bound
     log_prob = m.log_prob(z)
     log_prob -= torch.log(1 - action.pow(2) + epsilon)
-    log_prob = log_prob.sum(1, keepdim=True)
+    log_policy = log_prob.sum(1, keepdim=True)
 
-    return action, log_prob
+    return action, log_policy
 
 def hard_target_update(net, target_net):
     target_net.load_state_dict(net.state_dict())

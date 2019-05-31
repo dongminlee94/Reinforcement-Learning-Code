@@ -7,10 +7,7 @@ def get_action(mu, std):
     action = m.sample()
     return action.data.numpy()
 
-
 def get_returns(rewards, masks, gamma):
-    rewards = torch.Tensor(rewards)
-    masks = torch.Tensor(masks)
     returns = torch.zeros_like(rewards)
 
     running_returns = 0
@@ -20,21 +17,23 @@ def get_returns(rewards, masks, gamma):
         returns[t] = running_returns
 
     returns = (returns - returns.mean()) / returns.std()
+
     return returns
 
+def get_log_prob(actions, mu, std):
+    m = Normal(mu, std)
+    log_prob = m.log_prob(actions)
 
-def log_prob_density(x, mu, std):
-    log_density = -(x - mu).pow(2) / (2 * std.pow(2)) \
-                    - 0.5 * math.log(2 * math.pi)
-    return log_density.sum(1, keepdim=True)
+    return log_prob
 
 def surrogate_loss(actor, returns, states, old_policy, actions):
     mu, std = actor(torch.Tensor(states))
-    new_policy = log_prob_density(torch.Tensor(actions), mu, std)
+    new_policy = get_log_prob(actions, mu, std)
     returns = returns.unsqueeze(1)
 
     surrogate = torch.exp(new_policy - old_policy) * returns
     surrogate = surrogate.mean()
+
     return surrogate
 
 

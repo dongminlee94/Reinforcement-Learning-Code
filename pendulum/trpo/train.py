@@ -34,6 +34,10 @@ def train_model(actor, memory, state_size, action_size, args):
     rewards = list(memory[:, 2])
     masks = list(memory[:, 3])
 
+    actions = torch.Tensor(actions).squeeze(1)
+    rewards = torch.Tensor(rewards).squeeze(1)
+    masks = torch.Tensor(masks)
+
     # ----------------------------
     # step 1: get returns
     returns = get_returns(rewards, masks, args.gamma)
@@ -41,7 +45,7 @@ def train_model(actor, memory, state_size, action_size, args):
     # ----------------------------
     # step 2: get gradient of loss and hessian of kl and search direction
     mu, std = actor(torch.Tensor(states))
-    old_policy = log_prob_density(torch.Tensor(actions), mu, std)
+    old_policy = get_log_prob(actions, mu, std)
     loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
     
     loss_grad = torch.autograd.grad(loss, actor.parameters())
@@ -135,6 +139,7 @@ def main():
             episodes += 1
 
             state = env.reset()
+            state = np.reshape(state, [1, state_size])
 
             for _ in range(200):
                 if args.render:
@@ -142,14 +147,15 @@ def main():
 
                 steps += 1
 
-                mu, std = actor(torch.Tensor(state).unsqueeze(0))
-                action = get_action(mu, std)[0]
+                mu, std = actor(torch.Tensor(state))
+                action = get_action(mu, std)
 
                 next_state, reward, done, _ = env.step(action)
                 mask = 0 if done else 1
 
                 memory.append([state, action, reward, mask])
 
+                next_state = np.reshape(next_state, [1, state_size])
                 state = next_state
                 score += reward
 

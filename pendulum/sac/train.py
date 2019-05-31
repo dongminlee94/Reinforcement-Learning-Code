@@ -51,11 +51,11 @@ def train_model(actor, critic, critic_target, mini_batch,
     value1, value2 = critic(torch.Tensor(states), actions) # Two Q-functions
 
     mu, std = actor(torch.Tensor(next_states))
-    next_policy, next_log_prob = eval_action(mu, std)
+    next_policy, next_log_policy = eval_action(mu, std)
     next_value1, next_value2 = critic_target(torch.Tensor(next_states), next_policy)
     
     min_next_value = torch.min(next_value1, next_value2)
-    min_next_value = min_next_value.squeeze(1) - alpha * next_log_prob.squeeze(1)
+    min_next_value = min_next_value.squeeze(1) - alpha * next_log_policy.squeeze(1)
     target = rewards + masks * args.gamma * min_next_value
 
     critic_loss1 = criterion(value1.squeeze(1), target.detach()) # Equation 5 
@@ -70,18 +70,18 @@ def train_model(actor, critic, critic_target, mini_batch,
 
     # update actor 
     mu, std = actor(torch.Tensor(states))
-    policy, log_prob = eval_action(mu, std)
+    policy, log_policy = eval_action(mu, std)
     
     value1, value2 = critic(torch.Tensor(states), policy)
     min_value = torch.min(value1, value2)
     
-    actor_loss = ((alpha * log_prob) - min_value).mean() # Equation 9 
+    actor_loss = ((alpha * log_policy) - min_value).mean() # Equation 9 
     actor_optimizer.zero_grad()
     actor_loss.backward()
     actor_optimizer.step()
 
     # update alpha
-    alpha_loss = -(log_alpha * (log_prob + target_entropy).detach()).mean() # Equation 18
+    alpha_loss = -(log_alpha * (log_policy + target_entropy).detach()).mean() # Equation 18
     alpha_optimizer.zero_grad()
     alpha_loss.backward()
     alpha_optimizer.step()

@@ -7,10 +7,7 @@ def get_action(mu, std):
     action = m.sample()
     return action.data.numpy()
 
-
 def get_returns(rewards, masks, gamma):
-    rewards = torch.Tensor(rewards)
-    masks = torch.Tensor(masks)
     returns = torch.zeros_like(rewards)
 
     running_returns = 0
@@ -20,22 +17,24 @@ def get_returns(rewards, masks, gamma):
         returns[t] = running_returns
 
     returns = (returns - returns.mean()) / returns.std()
+
     return returns
 
+def get_log_prob(actions, mu, std):
+    m = Normal(mu, std)
+    log_prob = m.log_prob(actions)
+
+    return log_prob
 
 def get_loss(actor, returns, states, actions):
     mu, std = actor(torch.Tensor(states))
-    log_policy = log_prob_density(torch.Tensor(actions), mu, std)
+    log_policy = get_log_prob(actions, mu, std)
     returns = returns.unsqueeze(1)
 
     loss = log_policy * returns
     loss = loss.mean()
-    return loss
 
-def log_prob_density(x, mu, std):
-    log_density = -(x - mu).pow(2) / (2 * std.pow(2)) \
-                    - 0.5 * math.log(2 * math.pi)
-    return log_density.sum(1, keepdim=True)
+    return loss
 
 
 # from openai baseline code
