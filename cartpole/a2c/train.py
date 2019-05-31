@@ -57,6 +57,7 @@ def get_action(policies):
     m = Categorical(policies)
     action = m.sample()
     action = action.data.numpy()[0]
+    
     return action
 
 

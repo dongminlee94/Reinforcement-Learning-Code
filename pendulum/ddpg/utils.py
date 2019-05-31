@@ -13,15 +13,17 @@ class OUNoise:
         dx = self.theta * (self.mu - self.X)
         dx = dx + self.sigma * np.random.randn(len(self.X))
         self.X = self.X + dx
+        
         return self.X
+
+def get_action(policy, ou_noise): 
+    action = policy.detach().numpy() + ou_noise.sample() 
+
+    return action
 
 def hard_target_update(actor, critic, actor_target, critic_target):
     actor_target.load_state_dict(actor.state_dict())
     critic_target.load_state_dict(critic.state_dict())
-
-def get_action(policy, ou_noise): 
-    action = policy.detach().numpy() + ou_noise.sample() 
-    return action
 
 def soft_target_update(actor, critic, actor_target, critic_target, tau):
     soft_update(actor, actor_target, tau)

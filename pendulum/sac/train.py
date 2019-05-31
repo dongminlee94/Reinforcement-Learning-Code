@@ -79,7 +79,7 @@ def train_model(actor, critic, critic_target, mini_batch,
     actor_optimizer.zero_grad()
     actor_loss.backward()
     actor_optimizer.step()
-
+    
     # update alpha
     alpha_loss = -(log_alpha * (log_policy + target_entropy).detach()).mean() # Equation 18
     alpha_optimizer.zero_grad()

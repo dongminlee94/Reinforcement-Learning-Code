@@ -3,13 +3,13 @@ import torch
 from torch.distributions import Normal
 
 def get_action(mu, std):
-    m = Normal(mu, std)
-    action = m.sample()
+    normal = Normal(mu, std)
+    action = normal.sample()
+
     return action.data.numpy()
 
 def get_returns(rewards, masks, gamma):
     returns = torch.zeros_like(rewards)
-
     running_returns = 0
 
     for t in reversed(range(0, len(rewards))):
@@ -21,8 +21,8 @@ def get_returns(rewards, masks, gamma):
     return returns
 
 def get_log_prob(actions, mu, std):
-    m = Normal(mu, std)
-    log_prob = m.log_prob(actions)
+    normal = Normal(mu, std)
+    log_prob = normal.log_prob(actions)
 
     return log_prob
 
@@ -60,6 +60,7 @@ def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
         
         if rdotr < residual_tol: # residual_tol = 0.0000000001
             break
+
     return x
 
 def hessian_vector_product(actor, states, p, cg_damping):
@@ -86,6 +87,7 @@ def kl_divergence(old_actor, new_actor, states):
     # pi_old -> mu_old, std_old / pi_new -> mu, std
     # be careful of calculating KL-divergence. It is not symmetric metric.
     kl = torch.log(std / std_old) + (std_old.pow(2) + (mu_old - mu).pow(2)) / (2.0 * std.pow(2)) - 0.5
+
     return kl.sum(1, keepdim=True)
 
 
@@ -94,6 +96,7 @@ def flat_grad(grads):
     for grad in grads:
         grad_flatten.append(grad.view(-1))
     grad_flatten = torch.cat(grad_flatten)
+
     return grad_flatten
 
 def flat_hessian(hessians):
@@ -101,6 +104,7 @@ def flat_hessian(hessians):
     for hessian in hessians:
         hessians_flatten.append(hessian.contiguous().view(-1))
     hessians_flatten = torch.cat(hessians_flatten).data
+
     return hessians_flatten
 
 
@@ -109,6 +113,7 @@ def flat_params(model):
     for param in model.parameters():
         params.append(param.data.view(-1))
     params_flatten = torch.cat(params)
+
     return params_flatten
 
 def update_model(model, new_params):

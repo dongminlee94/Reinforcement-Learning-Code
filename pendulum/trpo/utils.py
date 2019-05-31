@@ -3,13 +3,13 @@ import torch
 from torch.distributions import Normal
 
 def get_action(mu, std):
-    m = Normal(mu, std)
-    action = m.sample()
+    normal = Normal(mu, std)
+    action = normal.sample()
+    
     return action.data.numpy()
 
 def get_returns(rewards, masks, gamma):
     returns = torch.zeros_like(rewards)
-
     running_returns = 0
 
     for t in reversed(range(0, len(rewards))):
@@ -21,8 +21,8 @@ def get_returns(rewards, masks, gamma):
     return returns
 
 def get_log_prob(actions, mu, std):
-    m = Normal(mu, std)
-    log_prob = m.log_prob(actions)
+    normal = Normal(mu, std)
+    log_prob = normal.log_prob(actions)
 
     return log_prob
 
