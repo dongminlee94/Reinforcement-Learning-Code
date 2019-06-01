@@ -94,9 +94,10 @@ def main():
                 action = get_action(mu, std)
 
                 next_state, reward, done, _ = env.step(action)
+                
                 mask = 0 if done else 1
 
-                memory.append([state, action, reward, mask])
+                memory.append((state, action, reward, mask))
                 
                 next_state = np.reshape(next_state, [1, state_size])
                 state = next_state

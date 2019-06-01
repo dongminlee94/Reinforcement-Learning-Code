@@ -8,7 +8,7 @@ import torch
 import torch.optim as optim
 
 from utils import *
-from model import Actor
+from model import Actor, Critic
 from tensorboardX import SummaryWriter
 
 parser = argparse.ArgumentParser()
@@ -17,7 +17,10 @@ parser.add_argument('--load_model', type=str, default=None)
 parser.add_argument('--save_path', default='./save_model/', help='')
 parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
+parser.add_argument('--lamda', type=float, default=0.99)
 parser.add_argument('--hidden_size', type=int, default=64)
+parser.add_argument('--batch_size', type=int, default=64)
+parser.add_argument('--critic_lr', type=float, default=1e-3)
 parser.add_argument('--max_kl', type=float, default=1e-2)
 parser.add_argument('--max_iter_num', type=int, default=500)
 parser.add_argument('--total_sample_size', type=int, default=2048)
@@ -27,7 +30,8 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor, memory, state_size, action_size, args):
+def train_model(actor, critic, critic_optimizer, 
+                memory, state_size, action_size, args):
     memory = np.array(memory)
     states = np.vstack(memory[:, 0])
     actions = list(memory[:, 1])
@@ -39,14 +43,40 @@ def train_model(actor, memory, state_size, action_size, args):
     masks = torch.Tensor(masks)
 
     # ----------------------------
-    # step 1: get returns
-    returns = get_returns(rewards, masks, args.gamma)
+    # step 1: get returns and GAEs
+    values = critic(torch.Tensor(states))
+    returns, advantages = get_gae(rewards, masks, values, args)
 
     # ----------------------------
-    # step 2: get gradient of loss and hessian of kl and search direction
+    # step 2: train critic several steps with respect to returns
+    criterion = torch.nn.MSELoss()
+
+    n = len(states)
+    arr = np.arange(n)
+
+    for epoch in range(5):
+        np.random.shuffle(arr)
+
+        for i in range(n // args.batch_size):
+            batch_index = arr[args.batch_size * i: args.batch_size * (i + 1)]
+            batch_index = torch.LongTensor(batch_index)
+            
+            inputs = torch.Tensor(states)[batch_index]
+            values = critic(inputs)
+            
+            target1 = returns.unsqueeze(1)[batch_index]
+            target2 = advantages.unsqueeze(1)[batch_index]
+            
+            loss = criterion(values, target1 + target2)
+            critic_optimizer.zero_grad()
+            loss.backward()
+            critic_optimizer.step()
+
+    # ----------------------------
+    # step 3: get gradient of loss and hessian of kl and search direction
     mu, std = actor(torch.Tensor(states))
     old_policy = get_log_prob(actions, mu, std)
-    loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
+    loss = surrogate_loss(actor, advantages, states, old_policy.detach(), actions)
     
     loss_grad = torch.autograd.grad(loss, actor.parameters())
     loss_grad = flat_grad(loss_grad)
@@ -55,14 +85,14 @@ def train_model(actor, memory, state_size, action_size, args):
     search_dir = conjugate_gradient(actor, states, loss_grad.data, nsteps=10)
     
     # ----------------------------
-    # step 3: get step-size alpha and maximal step
+    # step 4: get step-size alpha and maximal step
     sHs = 0.5 * (search_dir * hessian_vector_product(actor, states, search_dir)
                  ).sum(0, keepdim=True)
     step_size = torch.sqrt(2 * args.max_kl / sHs)[0]
     maximal_step = step_size * search_dir
 
     # ----------------------------    
-    # step 4: perform backtracking line search for n iteration
+    # step 5: perform backtracking line search for n iteration
     old_actor = Actor(state_size, action_size, args)
     params = flat_params(actor)
     update_model(old_actor, params)
@@ -83,7 +113,7 @@ def train_model(actor, memory, state_size, action_size, args):
         new_params = params + t * maximal_step
         update_model(actor, new_params)
         
-        new_loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
+        new_loss = surrogate_loss(actor, advantages, states, old_policy.detach(), actions)
         new_loss = new_loss.data.numpy()
 
         loss_improve = new_loss - loss
@@ -124,6 +154,8 @@ def main():
     print('action size:', action_size)
     
     actor = Actor(state_size, action_size, args)
+    critic = Critic(state_size, args)
+    critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
     writer = SummaryWriter(args.logdir)
 
@@ -167,8 +199,8 @@ def main():
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
             writer.add_scalar('log/score', float(score), iter)
         
-        actor.train()
-        train_model(actor, memory, state_size, action_size, args)
+        actor.train(), critic.train()
+        train_model(actor, critic, critic_optimizer, memory, state_size, action_size, args)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):

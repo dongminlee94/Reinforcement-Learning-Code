@@ -8,17 +8,28 @@ def get_action(mu, std):
     
     return action.data.numpy()
 
-def get_returns(rewards, masks, gamma):
+def get_gae(rewards, masks, values, args):
     returns = torch.zeros_like(rewards)
+    advantages = torch.zeros_like(rewards)
+
     running_returns = 0
+    previous_value = 0
+    running_advants = 0
 
     for t in reversed(range(0, len(rewards))):
-        running_returns = rewards[t] + gamma * running_returns * masks[t]
+        running_returns = rewards[t] + args.gamma * running_returns * masks[t]
+        running_tderror = rewards[t] + args.gamma * previous_value * masks[t] - \
+                            values.data[t]
+        running_advants = running_tderror + args.gamma * args.lamda * \
+                          running_advants * masks[t]
+
         returns[t] = running_returns
+        previous_value = values.data[t]
+        advantages[t] = running_advants
 
-    returns = (returns - returns.mean()) / returns.std()
-
-    return returns
+    advantages = (advantages - advantages.mean()) / advantages.std()
+    
+    return returns, advantages
 
 def get_log_prob(actions, mu, std):
     normal = Normal(mu, std)
@@ -26,12 +37,12 @@ def get_log_prob(actions, mu, std):
 
     return log_prob
 
-def surrogate_loss(actor, returns, states, old_policy, actions):
+def surrogate_loss(actor, advantages, states, old_policy, actions):
     mu, std = actor(torch.Tensor(states))
     new_policy = get_log_prob(actions, mu, std)
-    returns = returns.unsqueeze(1)
+    advantages = advantages.unsqueeze(1)
 
-    surrogate_loss = torch.exp(new_policy - old_policy) * returns
+    surrogate_loss = torch.exp(new_policy - old_policy) * advantages
     surrogate_loss = surrogate_loss.mean()
 
     return surrogate_loss

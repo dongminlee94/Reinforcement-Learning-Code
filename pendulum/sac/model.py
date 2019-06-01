@@ -25,7 +25,6 @@ class Actor(nn.Module):
 
         return mu, std
 
-
 class Critic(nn.Module):
     def __init__(self, state_size, action_size, args):
         super(Critic, self).__init__()

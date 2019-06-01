@@ -40,6 +40,7 @@ if __name__=="__main__":
         score = 0
 
         state = env.reset()
+        state = np.reshape(state, [1, state_size])
 
         while not done:
             if args.render:
@@ -47,13 +48,14 @@ if __name__=="__main__":
 
             steps += 1
 
-            mu, std = actor(torch.Tensor(state).unsqueeze(0))
-            action = get_action(mu, std)[0]
+            mu, std = actor(torch.Tensor(state))
+            action = get_action(mu, std)
 
             next_state, reward, done, _ = env.step(action)
-            print("reward", reward)
+            
+            next_state = np.reshape(next_state, [1, state_size])
             state = next_state
             score += reward
 
         if episode % args.log_interval == 0:
-            print('{} episode | score: {:.2f}'.format(episode, score))
+            print('{} episode | score: {:.2f}'.format(episode, score[0]))
