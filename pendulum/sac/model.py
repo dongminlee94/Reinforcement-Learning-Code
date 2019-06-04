@@ -39,15 +39,15 @@ class Critic(nn.Module):
         self.fc5 = nn.Linear(args.hidden_size, args.hidden_size)
         self.fc6 = nn.Linear(args.hidden_size, 1)
 
-    def forward(self, x, actions):
-        x = torch.cat([x, actions], dim=1)
+    def forward(self, states, actions):
+        x = torch.cat([states, actions], dim=1)
 
         x1 = torch.relu(self.fc1(x))
         x1 = torch.relu(self.fc2(x1))
-        value1 = self.fc3(x1)
+        q_value1 = self.fc3(x1)
 
         x2 = torch.relu(self.fc4(x))
         x2 = torch.relu(self.fc5(x2))
-        value2 = self.fc6(x2)
+        q_value2 = self.fc6(x2)
 
-        return value1, value2
+        return q_value1, q_value2

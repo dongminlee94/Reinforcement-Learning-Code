@@ -64,10 +64,9 @@ def train_model(actor, critic, critic_optimizer,
             inputs = torch.Tensor(states)[batch_index]
             values = critic(inputs)
             
-            target1 = returns.unsqueeze(1)[batch_index]
-            target2 = advantages.unsqueeze(1)[batch_index]
+            target = returns.unsqueeze(1)[batch_index]
             
-            loss = criterion(values, target1 + target2)
+            loss = criterion(values, target)
             critic_optimizer.zero_grad()
             loss.backward()
             critic_optimizer.step()

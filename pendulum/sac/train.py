@@ -48,22 +48,22 @@ def train_model(actor, critic, critic_target, mini_batch,
     # update critic 
     criterion = torch.nn.MSELoss()
     
-    value1, value2 = critic(torch.Tensor(states), actions) # Two Q-functions
+    q_value1, q_value2 = critic(torch.Tensor(states), actions) # Two Q-functions
 
     mu, std = actor(torch.Tensor(next_states))
     next_policy, next_log_policy = eval_action(mu, std)
-    next_value1, next_value2 = critic_target(torch.Tensor(next_states), next_policy)
+    next_q_value1, next_q_value2 = critic_target(torch.Tensor(next_states), next_policy)
     
-    min_next_value = torch.min(next_value1, next_value2)
-    min_next_value = min_next_value.squeeze(1) - alpha * next_log_policy.squeeze(1)
-    target = rewards + masks * args.gamma * min_next_value
+    min_next_q_value = torch.min(next_q_value1, next_q_value2)
+    min_next_q_value = min_next_q_value.squeeze(1) - alpha * next_log_policy.squeeze(1)
+    target = rewards + masks * args.gamma * min_next_q_value
 
-    critic_loss1 = criterion(value1.squeeze(1), target.detach()) # Equation 5 
+    critic_loss1 = criterion(q_value1.squeeze(1), target.detach()) # Equation 5 
     critic_optimizer.zero_grad()
     critic_loss1.backward()
     critic_optimizer.step()
 
-    critic_loss2 = criterion(value2.squeeze(1), target.detach()) # Equation 5 
+    critic_loss2 = criterion(q_value2.squeeze(1), target.detach()) # Equation 5 
     critic_optimizer.zero_grad()
     critic_loss2.backward()
     critic_optimizer.step()
@@ -72,10 +72,10 @@ def train_model(actor, critic, critic_target, mini_batch,
     mu, std = actor(torch.Tensor(states))
     policy, log_policy = eval_action(mu, std)
     
-    value1, value2 = critic(torch.Tensor(states), policy)
-    min_value = torch.min(value1, value2)
+    q_value1, q_value2 = critic(torch.Tensor(states), policy)
+    min_q_value = torch.min(q_value1, q_value2)
     
-    actor_loss = ((alpha * log_policy) - min_value).mean() # Equation 9 
+    actor_loss = ((alpha * log_policy) - min_q_value).mean() # Equation 9 
     actor_optimizer.zero_grad()
     actor_loss.backward()
     actor_optimizer.step()
@@ -86,7 +86,7 @@ def train_model(actor, critic, critic_target, mini_batch,
     alpha_loss.backward()
     alpha_optimizer.step()
 
-    alpha = torch.exp(log_alpha)
+    alpha = torch.exp(log_alpha) # alpha를 계속 양수로 만들어주기 위해서 log_alpha 사용
     
     return alpha
 

@@ -32,21 +32,23 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, po
     # critic update
     criterion = torch.nn.MSELoss()
     
-    value = critic(torch.Tensor(state))
+    value = critic(torch.Tensor(state)).squeeze(1)
     
-    next_value = critic(torch.Tensor(next_state))
-    q_value = reward + mask * args.gamma * next_value[0]
+    next_value = critic(torch.Tensor(next_state)).squeeze(1)
+    target = reward + mask * args.gamma * next_value
     
-    critic_loss = criterion(value[0], q_value.detach())
+    critic_loss = criterion(value, target.detach())
     critic_optimizer.zero_grad()
     critic_loss.backward()
     critic_optimizer.step()
 
     # actor update
-    log_policy = torch.log(policies[0])[action]
-    advantage = q_value - value[0]
-    m = Categorical(policies)
-    entropy = m.entropy()
+    categorical = Categorical(policies)
+    log_policy = categorical.log_prob(torch.Tensor([action]))
+    
+    advantage = target - value
+    
+    entropy = categorical.entropy()
 
     actor_loss = -log_policy * advantage.item() + 0.1 * entropy
     actor_optimizer.zero_grad()
@@ -54,8 +56,8 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, po
     actor_optimizer.step()
 
 def get_action(policies):
-    m = Categorical(policies)
-    action = m.sample()
+    categorical = Categorical(policies)
+    action = categorical.sample()
     action = action.data.numpy()[0]
     
     return action

@@ -20,12 +20,6 @@ def get_returns(rewards, masks, gamma):
 
     return returns
 
-def get_log_prob(actions, mu, std):
-    normal = Normal(mu, std)
-    log_prob = normal.log_prob(actions)
-
-    return log_prob
-
 def get_loss(actor, returns, states, actions):
     mu, std = actor(torch.Tensor(states))
     log_policy = get_log_prob(actions, mu, std)
@@ -35,6 +29,12 @@ def get_loss(actor, returns, states, actions):
     loss = loss.mean()
 
     return loss
+
+def get_log_prob(actions, mu, std):
+    normal = Normal(mu, std)
+    log_prob = normal.log_prob(actions)
+
+    return log_prob
 
 
 # from openai baseline code
