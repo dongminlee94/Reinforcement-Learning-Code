@@ -45,10 +45,9 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, po
     # actor update
     categorical = Categorical(policies)
     log_policy = categorical.log_prob(torch.Tensor([action]))
+    entropy = categorical.entropy()
     
     advantage = target - value
-    
-    entropy = categorical.entropy()
 
     actor_loss = -log_policy * advantage.item() + 0.1 * entropy
     actor_optimizer.zero_grad()
