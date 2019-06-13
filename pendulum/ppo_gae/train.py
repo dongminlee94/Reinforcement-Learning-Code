@@ -33,7 +33,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
 args = parser.parse_args()
 
 def train_model(actor, critic, actor_optimizer, critic_optimizer, 
-                memory, state_size, action_size, args):
+                memory, state_size, action_size):
     memory = np.array(memory)
     states = np.vstack(memory[:, 0])
     actions = list(memory[:, 1])
@@ -120,7 +120,7 @@ def main():
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    # writer = SummaryWriter(args.logdir)
+    writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -160,11 +160,11 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), iter)
+            writer.add_scalar('log/score', float(score), iter)
         
         actor.train(), critic.train()
         train_model(actor, critic, actor_optimizer, critic_optimizer, 
-                    memory, state_size, action_size, args)
+                    memory, state_size, action_size)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):

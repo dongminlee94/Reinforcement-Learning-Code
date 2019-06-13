@@ -19,6 +19,7 @@ parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--actor_lr', type=float, default=1e-4)
 parser.add_argument('--critic_lr', type=float, default=1e-3)
+parser.add_argument('--ent_coef', type=float, default=0.1)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
 parser.add_argument('--goal_score', type=int, default=400)
@@ -49,7 +50,7 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, po
     
     advantage = target - value
 
-    actor_loss = -log_policy * advantage.item() + 0.1 * entropy
+    actor_loss = -log_policy * advantage.item() + args.ent_coef * entropy
     actor_optimizer.zero_grad()
     actor_loss.backward()
     actor_optimizer.step()

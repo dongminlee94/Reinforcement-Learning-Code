@@ -26,7 +26,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor, memory, args):
+def train_model(actor, memory):
     memory = np.array(memory)
     states = np.vstack(memory[:, 0])
     actions = list(memory[:, 1])
@@ -111,7 +111,7 @@ def main():
             writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
-        train_model(actor, memory, args)
+        train_model(actor, memory)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):

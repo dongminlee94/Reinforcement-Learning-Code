@@ -32,8 +32,8 @@ parser.add_argument('--logdir', type=str, default='./logs',
 args = parser.parse_args()
 
 def train_model(actor, critic, critic_target, mini_batch, 
-                target_entropy, log_alpha, alpha, args,
-                actor_optimizer, critic_optimizer, alpha_optimizer):
+                actor_optimizer, critic_optimizer, alpha_optimizer,
+                target_entropy, log_alpha, alpha):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1])
@@ -153,8 +153,8 @@ def main():
                 
                 actor.train(), critic.train(), critic_target.train()
                 alpha = train_model(actor, critic, critic_target, mini_batch, 
-                                    target_entropy, log_alpha, alpha, args,
-                                    actor_optimizer, critic_optimizer, alpha_optimizer)
+                                    actor_optimizer, critic_optimizer, alpha_optimizer,
+                                    target_entropy, log_alpha, alpha)
                 
                 soft_target_update(critic, critic_target, args.tau)
 

@@ -30,7 +30,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(net, target_net, optimizer, mini_batch, batch_size):
+def train_model(net, target_net, optimizer, mini_batch):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1]) 
@@ -124,7 +124,7 @@ def main():
                 mini_batch = random.sample(memory, args.batch_size)
                 
                 net.train(), target_net.train()
-                train_model(net, target_net, optimizer, mini_batch, args.batch_size)
+                train_model(net, target_net, optimizer, mini_batch)
 
                 if steps % args.update_target:
                     update_target_model(net, target_net)
