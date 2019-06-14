@@ -106,7 +106,8 @@ def main():
             transition = [state, action, next_state, reward, mask]
 
             actor.train(), critic.train()
-            train_model(actor, critic, actor_optimizer, critic_optimizer, transition, policies)
+            train_model(actor, critic, actor_optimizer, critic_optimizer, 
+                        transition, policies)
 
             state = next_state
             score += reward
