@@ -87,6 +87,16 @@
 
 ---
 
+## Learning curve
+
+### CartPole
+
+![app](img/cartpole.png)
+
+### Pendulum
+
+---
+
 ## Reference
 
 - [Minimal and Clean Reinforcement Learning Examples in PyTorch](https://github.com/reinforcement-learning-kr/reinforcement-learning-pytorch)
