@@ -91,7 +91,7 @@
 
 ### CartPole
 
-![app](img/cartpole.png)
+<img src="img/cartpole.png" width="500"/>
 
 ### Pendulum
 
