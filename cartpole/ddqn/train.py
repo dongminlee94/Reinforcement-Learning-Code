@@ -90,7 +90,7 @@ def main():
     
     writer = SummaryWriter(args.logdir)
 
-    memory = deque(maxlen=10000)
+    replay_buffer = deque(maxlen=10000)
     running_score = 0
     steps = 0
     
@@ -116,7 +116,7 @@ def main():
             reward = reward if not done or score == 499 else -1
             mask = 0 if done else 1
             
-            memory.append((state, action, next_state, reward, mask))
+            replay_buffer.append((state, action, next_state, reward, mask))
 
             state = next_state
             score += reward
@@ -125,7 +125,7 @@ def main():
                 args.epsilon -= args.epsilon_decay
                 args.epsilon = max(args.epsilon, 0.1)
 
-                mini_batch = random.sample(memory, args.batch_size)
+                mini_batch = random.sample(replay_buffer, args.batch_size)
                 
                 net.train(), target_net.train()
                 train_model(net, target_net, optimizer, mini_batch)

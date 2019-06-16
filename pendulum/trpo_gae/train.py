@@ -30,12 +30,12 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor, critic, critic_optimizer, memory, state_size, action_size):
-    memory = np.array(memory)
-    states = np.vstack(memory[:, 0])
-    actions = list(memory[:, 1])
-    rewards = list(memory[:, 2])
-    masks = list(memory[:, 3])
+def train_model(actor, critic, critic_optimizer, trajectories, state_size, action_size):
+    trajectories = np.array(trajectories)
+    states = np.vstack(trajectories[:, 0])
+    actions = list(trajectories[:, 1])
+    rewards = list(trajectories[:, 2])
+    masks = list(trajectories[:, 3])
 
     actions = torch.Tensor(actions).squeeze(1)
     rewards = torch.Tensor(rewards).squeeze(1)
@@ -161,7 +161,7 @@ def main():
     episodes = 0
 
     for iter in range(args.max_iter_num):
-        memory = deque()
+        trajectories = deque()
         steps = 0
 
         while steps < args.total_sample_size: 
@@ -184,7 +184,7 @@ def main():
                 
                 mask = 0 if done else 1
 
-                memory.append((state, action, reward, mask))
+                trajectories.append((state, action, reward, mask))
 
                 next_state = np.reshape(next_state, [1, state_size])
                 state = next_state
@@ -198,7 +198,7 @@ def main():
             writer.add_scalar('log/score', float(score), iter)
         
         actor.train(), critic.train()
-        train_model(actor, critic, critic_optimizer, memory, state_size, action_size)
+        train_model(actor, critic, critic_optimizer, trajectories, state_size, action_size)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):

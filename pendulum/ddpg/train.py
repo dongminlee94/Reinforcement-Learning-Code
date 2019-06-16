@@ -93,7 +93,7 @@ def main():
 
     writer = SummaryWriter(args.logdir)
     
-    memory = deque(maxlen=10000)
+    replay_buffer = deque(maxlen=10000)
     recent_rewards = deque(maxlen=100)
     steps = 0
 
@@ -118,13 +118,13 @@ def main():
             next_state = np.reshape(next_state, [1, state_size])
             mask = 0 if done else 1
 
-            memory.append((state, action, next_state, reward, mask))
+            replay_buffer.append((state, action, next_state, reward, mask))
 
             state = next_state
             score += reward
 
             if steps > args.batch_size:
-                mini_batch = random.sample(memory, args.batch_size)
+                mini_batch = random.sample(replay_buffer, args.batch_size)
                 
                 actor.train(), critic.train()
                 actor_target.train(), critic_target.train()
