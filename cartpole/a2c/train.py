@@ -30,7 +30,7 @@ args = parser.parse_args()
 def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, policies):
     state, action, next_state, reward, mask = transition
     
-    # critic update
+    # update critic 
     criterion = torch.nn.MSELoss()
     
     value = critic(torch.Tensor(state)).squeeze(1)
@@ -43,7 +43,7 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, po
     critic_loss.backward()
     critic_optimizer.step()
 
-    # actor update
+    # update actor 
     categorical = Categorical(policies)
     log_policy = categorical.log_prob(torch.Tensor([action]))
     entropy = categorical.entropy()

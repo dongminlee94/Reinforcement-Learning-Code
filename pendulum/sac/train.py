@@ -52,11 +52,11 @@ def train_model(actor, critic, critic_target, mini_batch,
 
     mu, std = actor(torch.Tensor(next_states))
     next_policy, next_log_policy = eval_action(mu, std)
-    next_q_value1, next_q_value2 = critic_target(torch.Tensor(next_states), next_policy)
+    target_next_q_value1, target_next_q_value2 = critic_target(torch.Tensor(next_states), next_policy)
     
-    min_next_q_value = torch.min(next_q_value1, next_q_value2)
-    min_next_q_value = min_next_q_value.squeeze(1) - alpha * next_log_policy.squeeze(1)
-    target = rewards + masks * args.gamma * min_next_q_value
+    min_target_next_q_value = torch.min(target_next_q_value1, target_next_q_value2)
+    min_target_next_q_value = min_target_next_q_value.squeeze(1) - alpha * next_log_policy.squeeze(1)
+    target = rewards + masks * args.gamma * min_target_next_q_value
 
     critic_loss1 = criterion(q_value1.squeeze(1), target.detach()) # Equation 5 
     critic_optimizer.zero_grad()

@@ -50,9 +50,9 @@ def train_model(net, target_net, optimizer, mini_batch):
 
     # get target Q-value
     target_next_q_values = target_net(torch.Tensor(next_states)).squeeze(1)
-    target_q_value = rewards + masks * args.gamma * target_next_q_values.max(1)[0]
+    target = rewards + masks * args.gamma * target_next_q_values.max(1)[0]
     
-    loss = criterion(q_value, target_q_value.detach())
+    loss = criterion(q_value, target.detach())
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()

@@ -51,9 +51,9 @@ def train_model(actor, critic, actor_target, critic_target,
     
     q_value = critic(torch.Tensor(states), actions).squeeze(1)
     
-    next_policy = actor_target(torch.Tensor(next_states))
-    next_q_value = critic_target(torch.Tensor(next_states), next_policy).squeeze(1)
-    target = rewards + masks * args.gamma * next_q_value
+    target_next_policy = actor_target(torch.Tensor(next_states))
+    target_next_q_value = critic_target(torch.Tensor(next_states), target_next_policy).squeeze(1)
+    target = rewards + masks * args.gamma * target_next_q_value
     
     critic_loss = criterion(q_value, target.detach())
     critic_optimizer.zero_grad()
@@ -91,7 +91,7 @@ def main():
     hard_target_update(actor, critic, actor_target, critic_target)
     ou_noise = OUNoise(action_size, args.theta, args.mu, args.sigma)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
     
     replay_buffer = deque(maxlen=10000)
     recent_rewards = deque(maxlen=100)
@@ -138,7 +138,7 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | score_avg: {:.2f}'.format(episode, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), episode)
+            # writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):
