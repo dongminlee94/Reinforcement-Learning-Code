@@ -42,16 +42,20 @@ def train_model(actor, trajectories):
     returns = get_returns(rewards, masks, args.gamma)
 
     # ----------------------------
-    # step 2: get gradient of loss and hessian of kl and search direction
-    loss = get_loss(actor, returns, states, actions)
-    loss_grad = torch.autograd.grad(loss, actor.parameters())
-    loss_grad = flat_grad(loss_grad)
+    # step 2: get gradient of actor loss and hessian of kl and search direction
+    mu, std = actor(torch.Tensor(states))
+    log_policy = get_log_prob(actions, mu, std)
+    actor_loss = get_loss(actor, returns, log_policy)
 
-    search_dir = conjugate_gradient(actor, states, loss_grad.data, nsteps=10)
+    actor_loss_grad = torch.autograd.grad(actor_loss, actor.parameters())
+    actor_loss_grad = flat_grad(actor_loss_grad)
+
+    search_dir = conjugate_gradient(actor, states, actor_loss_grad.data, nsteps=10)
     
     # ----------------------------
     # step 3: update actor
     params = flat_params(actor)
+
     new_params = params + 0.5 * search_dir
     update_model(actor, new_params)
     

@@ -17,16 +17,17 @@ def get_gae(rewards, masks, values, args):
     running_advants = 0
 
     for t in reversed(range(0, len(rewards))):
-        running_returns = rewards[t] + args.gamma * running_returns * masks[t]
-        running_tderror = rewards[t] + args.gamma * previous_value * masks[t] - \
+        running_returns = rewards[t] + masks[t] * args.gamma * running_returns
+        running_tderror = rewards[t] + masks[t] * args.gamma * previous_value - \
                             values.data[t]
-        running_advants = running_tderror + args.gamma * args.lamda * \
-                          running_advants * masks[t]
+        running_advants = running_tderror + masks[t] * args.gamma * args.lamda * \
+                          running_advants
 
         returns[t] = running_returns
         previous_value = values.data[t]
         advantages[t] = running_advants
 
+    returns = (returns - returns.mean()) / returns.std()
     advantages = (advantages - advantages.mean()) / advantages.std()
     
     return returns, advantages
@@ -40,6 +41,7 @@ def get_log_prob(actions, mu, std):
 def surrogate_loss(actor, advantages, states, old_policy, actions):
     mu, std = actor(torch.Tensor(states))
     new_policy = get_log_prob(actions, mu, std)
+
     advantages = advantages.unsqueeze(1)
 
     surrogate_loss = torch.exp(new_policy - old_policy) * advantages
@@ -75,7 +77,7 @@ def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
 
 def hessian_vector_product(actor, states, p, cg_damping=1e-1):
     p.detach() 
-    kl = kl_divergence(old_actor=actor, new_actor=actor, states=states)
+    kl = kl_divergence(new_actor=actor, old_actor=actor, states=states)
     kl = kl.mean()
     
     kl_grad = torch.autograd.grad(kl, actor.parameters(), create_graph=True)
@@ -87,8 +89,9 @@ def hessian_vector_product(actor, states, p, cg_damping=1e-1):
 
     return kl_hessian + p * cg_damping # cg_damping = 0.1
 
-def kl_divergence(old_actor, new_actor, states):
+def kl_divergence(new_actor, old_actor, states):
     mu, std = new_actor(torch.Tensor(states))
+    
     mu_old, std_old = old_actor(torch.Tensor(states))
     mu_old = mu_old.detach()
     std_old = std_old.detach()

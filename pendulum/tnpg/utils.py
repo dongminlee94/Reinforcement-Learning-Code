@@ -13,16 +13,14 @@ def get_returns(rewards, masks, gamma):
     running_returns = 0
 
     for t in reversed(range(0, len(rewards))):
-        running_returns = rewards[t] + gamma * running_returns * masks[t]
+        running_returns = rewards[t] + masks[t] * gamma * running_returns 
         returns[t] = running_returns
 
     returns = (returns - returns.mean()) / returns.std()
 
     return returns
 
-def get_loss(actor, returns, states, actions):
-    mu, std = actor(torch.Tensor(states))
-    log_policy = get_log_prob(actions, mu, std)
+def get_loss(actor, returns, log_policy):
     returns = returns.unsqueeze(1)
 
     loss = log_policy * returns
@@ -65,7 +63,7 @@ def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
 
 def hessian_vector_product(actor, states, p, cg_damping):
     p.detach() 
-    kl = kl_divergence(old_actor=actor, new_actor=actor, states=states)
+    kl = kl_divergence(new_actor=actor, old_actor=actor, states=states)
     kl = kl.mean()
     
     kl_grad = torch.autograd.grad(kl, actor.parameters(), create_graph=True)
@@ -77,8 +75,9 @@ def hessian_vector_product(actor, states, p, cg_damping):
 
     return kl_hessian + p * cg_damping # cg_damping = 0.1
 
-def kl_divergence(old_actor, new_actor, states):
+def kl_divergence(new_actor, old_actor, states):
     mu, std = new_actor(torch.Tensor(states))
+
     mu_old, std_old = old_actor(torch.Tensor(states))
     mu_old = mu_old.detach()
     std_old = std_old.detach()

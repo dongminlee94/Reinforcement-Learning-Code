@@ -43,16 +43,17 @@ def train_model(actor, trajectories, state_size, action_size):
     returns = get_returns(rewards, masks, args.gamma)
 
     # ----------------------------
-    # step 2: get gradient of loss and hessian of kl and search direction
+    # step 2: get gradient of actor loss and hessian of kl and search direction
     mu, std = actor(torch.Tensor(states))
     old_policy = get_log_prob(actions, mu, std)
-    loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
+    actor_loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
     
-    loss_grad = torch.autograd.grad(loss, actor.parameters())
-    loss_grad = flat_grad(loss_grad)
-    loss = loss.data.numpy()
+    actor_loss_grad = torch.autograd.grad(actor_loss, actor.parameters())
+    actor_loss_grad = flat_grad(actor_loss_grad)
     
-    search_dir = conjugate_gradient(actor, states, loss_grad.data, nsteps=10)
+    search_dir = conjugate_gradient(actor, states, actor_loss_grad.data, nsteps=10)
+    
+    actor_loss = actor_loss.data.numpy()
     
     # ----------------------------
     # step 3: get step-size alpha and maximal step
@@ -62,13 +63,14 @@ def train_model(actor, trajectories, state_size, action_size):
     maximal_step = step_size * search_dir
 
     # ----------------------------    
-    # step 4: perform backtracking line search for n iteration
-    old_actor = Actor(state_size, action_size, args)
+    # step 4: update actor and perform backtracking line search for n iteration
     params = flat_params(actor)
+    
+    old_actor = Actor(state_size, action_size, args)
     update_model(old_actor, params)
     
     # 구했던 maximal step만큼 parameter space에서 움직였을 때 예상되는 performance 변화
-    expected_improve = (loss_grad * maximal_step).sum(0, keepdim=True)
+    expected_improve = (actor_loss_grad * maximal_step).sum(0, keepdim=True)
     expected_improve = expected_improve.data.numpy()
 
     # Backtracking line search
@@ -83,21 +85,21 @@ def train_model(actor, trajectories, state_size, action_size):
         new_params = params + t * maximal_step
         update_model(actor, new_params)
         
-        new_loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
-        new_loss = new_loss.data.numpy()
+        new_actor_loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
+        new_actor_loss = new_actor_loss.data.numpy()
 
-        loss_improve = new_loss - loss
+        loss_improve = new_actor_loss - actor_loss
         expected_improve *= t
         improve_condition = loss_improve / expected_improve
 
-        kl = kl_divergence(old_actor=old_actor, new_actor=actor, states=states)
+        kl = kl_divergence(new_actor=actor, old_actor=old_actor, states=states)
         kl = kl.mean()
 
         # print('kl: {:.4f} | loss_improve: {:.4f} | expected_improve: {:.4f} '
         #       '| improve_condition: {:.4f} | number of line search: {}'
         #       .format(kl.data.numpy(), loss_improve, expected_improve[0], improve_condition[0], i))
 
-        # kl-divergence와 expected_new_loss_grad와 함께 trust region 안에 있는지 밖에 있는지를 판단
+        # kl-divergence와 expected_new_actor_loss_grad와 함께 trust region 안에 있는지 밖에 있는지를 판단
         # trust region 안에 있으면 loop 탈출
         # max_kl = 0.01
         if kl < args.max_kl and improve_condition > alpha:
@@ -125,7 +127,7 @@ def main():
     
     actor = Actor(state_size, action_size, args)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -165,7 +167,7 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), iter)
+            # writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
         train_model(actor, trajectories, state_size, action_size)

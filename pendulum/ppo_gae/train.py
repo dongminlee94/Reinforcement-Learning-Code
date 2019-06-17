@@ -17,7 +17,7 @@ parser.add_argument('--load_model', type=str, default=None)
 parser.add_argument('--save_path', default='./save_model/', help='')
 parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
-parser.add_argument('--lamda', type=float, default=0.99)
+parser.add_argument('--lamda', type=float, default=0.98)
 parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--actor_lr', type=float, default=1e-3)
@@ -68,7 +68,7 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer,
             advantages_samples = advantages.unsqueeze(1)[batch_index]
             oldvalue_samples = old_values[batch_index].detach()
             
-            # critic loss
+            # get critic loss
             values = critic(inputs)
             clipped_values = oldvalue_samples + \
                              torch.clamp(values - oldvalue_samples,
@@ -78,9 +78,9 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer,
             critic_loss1 = criterion(values, returns_samples)
             critic_loss2 = criterion(clipped_values, returns_samples)
             
-            critic_loss = torch.max(critic_loss1, critic_loss2).mean()
+            critic_loss = torch.max(critic_loss1, critic_loss2)
 
-            # actor loss
+            # get actor loss
             loss, ratio = surrogate_loss(actor, advantages_samples, inputs,
                                          old_policy.detach(), actions_samples,
                                          batch_index)
@@ -92,7 +92,7 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer,
             
             actor_loss = -torch.min(loss, clipped_loss).mean()
 
-            # update actor loss & critic loss
+            # update actor & critic 
             loss = actor_loss + 0.5 * critic_loss
 
             critic_optimizer.zero_grad()
@@ -120,7 +120,7 @@ def main():
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -160,7 +160,7 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), iter)
+            # writer.add_scalar('log/score', float(score), iter)
         
         actor.train(), critic.train()
         train_model(actor, critic, actor_optimizer, critic_optimizer, 

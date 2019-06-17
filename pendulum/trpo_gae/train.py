@@ -17,7 +17,7 @@ parser.add_argument('--load_model', type=str, default=None)
 parser.add_argument('--save_path', default='./save_model/', help='')
 parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
-parser.add_argument('--lamda', type=float, default=0.99)
+parser.add_argument('--lamda', type=float, default=0.98)
 parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--critic_lr', type=float, default=1e-3)
@@ -47,40 +47,28 @@ def train_model(actor, critic, critic_optimizer, trajectories, state_size, actio
     returns, advantages = get_gae(rewards, masks, values, args)
 
     # ----------------------------
-    # step 2: train critic several steps with respect to returns
+    # step 2: update critic with respect to returns
     criterion = torch.nn.MSELoss()
 
-    n = len(states)
-    arr = np.arange(n)
+    target = returns.unsqueeze(1)
 
-    for epoch in range(5):
-        np.random.shuffle(arr)
-
-        for i in range(n // args.batch_size):
-            batch_index = arr[args.batch_size * i: args.batch_size * (i + 1)]
-            batch_index = torch.LongTensor(batch_index)
-            
-            inputs = torch.Tensor(states)[batch_index]
-            values = critic(inputs)
-            
-            target = returns.unsqueeze(1)[batch_index]
-            
-            loss = criterion(values, target)
-            critic_optimizer.zero_grad()
-            loss.backward()
-            critic_optimizer.step()
+    critic_loss = criterion(values, target)
+    critic_optimizer.zero_grad()
+    critic_loss.backward()
+    critic_optimizer.step()
 
     # ----------------------------
-    # step 3: get gradient of loss and hessian of kl and search direction
+    # step 3: get gradient of actor loss and hessian of kl and search direction
     mu, std = actor(torch.Tensor(states))
     old_policy = get_log_prob(actions, mu, std)
-    loss = surrogate_loss(actor, advantages, states, old_policy.detach(), actions)
+    actor_loss = surrogate_loss(actor, advantages, states, old_policy.detach(), actions)
     
-    loss_grad = torch.autograd.grad(loss, actor.parameters())
-    loss_grad = flat_grad(loss_grad)
-    loss = loss.data.numpy()
+    actor_loss_grad = torch.autograd.grad(actor_loss, actor.parameters())
+    actor_loss_grad = flat_grad(actor_loss_grad)
     
-    search_dir = conjugate_gradient(actor, states, loss_grad.data, nsteps=10)
+    search_dir = conjugate_gradient(actor, states, actor_loss_grad.data, nsteps=10)
+    
+    actor_loss = actor_loss.data.numpy()
     
     # ----------------------------
     # step 4: get step-size alpha and maximal step
@@ -90,13 +78,14 @@ def train_model(actor, critic, critic_optimizer, trajectories, state_size, actio
     maximal_step = step_size * search_dir
 
     # ----------------------------    
-    # step 5: perform backtracking line search for n iteration
-    old_actor = Actor(state_size, action_size, args)
+    # step 5: update actor and perform backtracking line search for n iteration
     params = flat_params(actor)
+    
+    old_actor = Actor(state_size, action_size, args)
     update_model(old_actor, params)
     
     # 구했던 maximal step만큼 parameter space에서 움직였을 때 예상되는 performance 변화
-    expected_improve = (loss_grad * maximal_step).sum(0, keepdim=True)
+    expected_improve = (actor_loss_grad * maximal_step).sum(0, keepdim=True)
     expected_improve = expected_improve.data.numpy()
 
     # Backtracking line search
@@ -111,14 +100,14 @@ def train_model(actor, critic, critic_optimizer, trajectories, state_size, actio
         new_params = params + t * maximal_step
         update_model(actor, new_params)
         
-        new_loss = surrogate_loss(actor, advantages, states, old_policy.detach(), actions)
-        new_loss = new_loss.data.numpy()
+        new_actor_loss = surrogate_loss(actor, advantages, states, old_policy.detach(), actions)
+        new_actor_loss = new_actor_loss.data.numpy()
 
-        loss_improve = new_loss - loss
+        loss_improve = new_actor_loss - actor_loss
         expected_improve *= t
         improve_condition = loss_improve / expected_improve
 
-        kl = kl_divergence(old_actor=old_actor, new_actor=actor, states=states)
+        kl = kl_divergence(new_actor=actor, old_actor=old_actor, states=states)
         kl = kl.mean()
 
         # print('kl: {:.4f} | loss_improve: {:.4f} | expected_improve: {:.4f} '
@@ -155,7 +144,7 @@ def main():
     critic = Critic(state_size, args)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -195,7 +184,7 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), iter)
+            # writer.add_scalar('log/score', float(score), iter)
         
         actor.train(), critic.train()
         train_model(actor, critic, critic_optimizer, trajectories, state_size, action_size)
