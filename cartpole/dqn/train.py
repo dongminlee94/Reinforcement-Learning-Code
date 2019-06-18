@@ -48,7 +48,7 @@ def train_model(net, target_net, optimizer, mini_batch):
     q_values = net(torch.Tensor(states)).squeeze(1)
     q_value = q_values.gather(1, actions.unsqueeze(1)).view(-1)
 
-    # get target Q-value
+    # get target
     target_next_q_values = target_net(torch.Tensor(next_states)).squeeze(1)
     target = rewards + masks * args.gamma * target_next_q_values.max(1)[0]
     
