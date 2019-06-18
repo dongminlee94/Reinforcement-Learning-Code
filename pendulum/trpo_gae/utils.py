@@ -27,7 +27,6 @@ def get_gae(rewards, masks, values, args):
         previous_value = values.data[t]
         advantages[t] = running_advants
 
-    returns = (returns - returns.mean()) / returns.std()
     advantages = (advantages - advantages.mean()) / advantages.std()
     
     return returns, advantages
