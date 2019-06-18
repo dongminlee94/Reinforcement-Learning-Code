@@ -47,15 +47,28 @@ def train_model(actor, critic, critic_optimizer, trajectories, state_size, actio
     returns, advantages = get_gae(rewards, masks, values, args)
 
     # ----------------------------
-    # step 2: update critic with respect to returns
+    # step 2: update critic
     criterion = torch.nn.MSELoss()
 
-    target = returns.unsqueeze(1)
+    n = len(states)
+    arr = np.arange(n)
 
-    critic_loss = criterion(values, target)
-    critic_optimizer.zero_grad()
-    critic_loss.backward()
-    critic_optimizer.step()
+    for _ in range(5):
+        np.random.shuffle(arr)
+
+        for i in range(n // args.batch_size):
+            batch_index = arr[args.batch_size * i: args.batch_size * (i + 1)]
+            batch_index = torch.LongTensor(batch_index)
+
+            inputs = torch.Tensor(states)[batch_index]
+            values_samples = critic(inputs)
+
+            target_samples = returns.unsqueeze(1)[batch_index]
+
+            critic_loss = criterion(values_samples, target_samples)
+            critic_optimizer.zero_grad()
+            critic_loss.backward()
+            critic_optimizer.step()
 
     # ----------------------------
     # step 3: get gradient of actor loss and hessian of kl and search direction
