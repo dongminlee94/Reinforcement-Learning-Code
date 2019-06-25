@@ -34,8 +34,8 @@ def train_model(net, target_net, optimizer, mini_batch):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1]) 
-    next_states = np.vstack(mini_batch[:, 2])
-    rewards = list(mini_batch[:, 3]) 
+    rewards = list(mini_batch[:, 2]) 
+    next_states = np.vstack(mini_batch[:, 3])
     masks = list(mini_batch[:, 4]) 
 
     actions = torch.LongTensor(actions)
@@ -112,7 +112,7 @@ def main():
             reward = reward if not done or score == 499 else -1
             mask = 0 if done else 1
 
-            replay_buffer.append((state, action, next_state, reward, mask))
+            replay_buffer.append((state, action, reward, next_state, mask))
 
             state = next_state
             score += reward

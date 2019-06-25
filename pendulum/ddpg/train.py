@@ -38,8 +38,8 @@ def train_model(actor, critic, actor_target, critic_target,
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1])
-    next_states = np.vstack(mini_batch[:, 2])
-    rewards = list(mini_batch[:, 3])
+    rewards = list(mini_batch[:, 2])
+    next_states = np.vstack(mini_batch[:, 3])
     masks = list(mini_batch[:, 4])
 
     actions = torch.Tensor(actions).squeeze(1)
@@ -49,8 +49,10 @@ def train_model(actor, critic, actor_target, critic_target,
     # update critic 
     criterion = torch.nn.MSELoss()
     
+    # get Q-value
     q_value = critic(torch.Tensor(states), actions).squeeze(1)
     
+    # get target
     target_next_policy = actor_target(torch.Tensor(next_states))
     target_next_q_value = critic_target(torch.Tensor(next_states), target_next_policy).squeeze(1)
     target = rewards + masks * args.gamma * target_next_q_value
@@ -62,9 +64,8 @@ def train_model(actor, critic, actor_target, critic_target,
 
     # update actor 
     policy = actor(torch.Tensor(states))
-    actor_loss = critic(torch.Tensor(states), policy).mean()
-
-    actor_loss = -actor_loss
+    
+    actor_loss = -critic(torch.Tensor(states), policy).mean()
     actor_optimizer.zero_grad()
     actor_loss.backward()
     actor_optimizer.step()
@@ -91,7 +92,7 @@ def main():
     hard_target_update(actor, critic, actor_target, critic_target)
     ou_noise = OUNoise(action_size, args.theta, args.mu, args.sigma)
 
-    writer = SummaryWriter(args.logdir)
+    # writer = SummaryWriter(args.logdir)
     
     replay_buffer = deque(maxlen=10000)
     recent_rewards = deque(maxlen=100)
@@ -118,7 +119,7 @@ def main():
             next_state = np.reshape(next_state, [1, state_size])
             mask = 0 if done else 1
 
-            replay_buffer.append((state, action, next_state, reward, mask))
+            replay_buffer.append((state, action, reward, next_state, mask))
 
             state = next_state
             score += reward
@@ -138,7 +139,7 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | score_avg: {:.2f}'.format(episode, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), episode)
+            # writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):

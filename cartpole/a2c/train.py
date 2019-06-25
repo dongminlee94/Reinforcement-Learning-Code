@@ -28,7 +28,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
 args = parser.parse_args()
 
 def train_model(actor, critic, actor_optimizer, critic_optimizer, transition, policies):
-    state, action, next_state, reward, mask = transition
+    state, action, reward, next_state, mask = transition
     
     # update critic 
     criterion = torch.nn.MSELoss()
@@ -103,7 +103,7 @@ def main():
             reward = reward if not done or score == 499 else -1
             mask = 0 if done else 1
             
-            transition = [state, action, next_state, reward, mask]
+            transition = [state, action, reward, next_state, mask]
 
             actor.train(), critic.train()
             train_model(actor, critic, actor_optimizer, critic_optimizer, 

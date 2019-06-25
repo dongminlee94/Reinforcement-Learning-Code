@@ -37,8 +37,8 @@ def train_model(actor, critic, critic_target, mini_batch,
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1])
-    next_states = np.vstack(mini_batch[:, 2])
-    rewards = list(mini_batch[:, 3])
+    rewards = list(mini_batch[:, 2])
+    next_states = np.vstack(mini_batch[:, 3])
     masks = list(mini_batch[:, 4])
 
     actions = torch.Tensor(actions).squeeze(1)
@@ -48,8 +48,10 @@ def train_model(actor, critic, critic_target, mini_batch,
     # update critic 
     criterion = torch.nn.MSELoss()
     
-    q_value1, q_value2 = critic(torch.Tensor(states), actions) # Two Q-functions
+    # get Q-value and use two Q-functions to mitigate positive bias in the policy improvement step
+    q_value1, q_value2 = critic(torch.Tensor(states), actions)
 
+    # get target
     mu, std = actor(torch.Tensor(next_states))
     next_policy, next_log_policy = eval_action(mu, std)
     target_next_q_value1, target_next_q_value2 = critic_target(torch.Tensor(next_states), next_policy)
@@ -86,7 +88,7 @@ def train_model(actor, critic, critic_target, mini_batch,
     alpha_loss.backward()
     alpha_optimizer.step()
 
-    alpha = torch.exp(log_alpha) # alpha를 계속 양수로 만들어주기 위해서 log_alpha 사용
+    alpha = torch.exp(log_alpha) 
     
     return alpha
 
@@ -113,8 +115,8 @@ def main():
     # initialize automatic entropy tuning
     target_entropy = -torch.prod(torch.Tensor(action_size)).item()
     log_alpha = torch.zeros(1, requires_grad=True)
-    alpha_optimizer = optim.Adam([log_alpha], lr=args.alpha_lr)
     alpha = torch.exp(log_alpha)
+    alpha_optimizer = optim.Adam([log_alpha], lr=args.alpha_lr)
     
     writer = SummaryWriter(args.logdir)
 
@@ -143,7 +145,7 @@ def main():
             next_state = np.reshape(next_state, [1, state_size])
             mask = 0 if done else 1
 
-            replay_buffer.append((state, action, next_state, reward, mask))
+            replay_buffer.append((state, action, reward, next_state, mask))
 
             state = next_state
             score += reward

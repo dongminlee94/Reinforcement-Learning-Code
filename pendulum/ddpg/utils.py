@@ -22,13 +22,13 @@ def get_action(policy, ou_noise):
     return action
 
 def hard_target_update(actor, critic, actor_target, critic_target):
-    actor_target.load_state_dict(actor.state_dict())
     critic_target.load_state_dict(critic.state_dict())
+    actor_target.load_state_dict(actor.state_dict())
 
 def soft_target_update(actor, critic, actor_target, critic_target, tau):
-    soft_update(actor, actor_target, tau)
     soft_update(critic, critic_target, tau)
+    soft_update(actor, actor_target, tau)
 
 def soft_update(net, target_net, tau):
     for param, target_param in zip(net.parameters(), target_net.parameters()):
-        target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
+        target_param.data.copy_(tau * param.data + (1.0 - tau) * target_param.data)
