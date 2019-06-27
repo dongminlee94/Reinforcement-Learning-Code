@@ -30,7 +30,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(net, target_net, optimizer, mini_batch):
+def train_model(q_net, target_q_net, optimizer, mini_batch):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
     actions = list(mini_batch[:, 1]) 
@@ -45,11 +45,11 @@ def train_model(net, target_net, optimizer, mini_batch):
     criterion = torch.nn.MSELoss()
 
     # get Q-value
-    q_values = net(torch.Tensor(states)).squeeze(1)
+    q_values = q_net(torch.Tensor(states))
     q_value = q_values.gather(1, actions.unsqueeze(1)).view(-1)
 
     # get target
-    target_next_q_values = target_net(torch.Tensor(next_states)).squeeze(1)
+    target_next_q_values = target_q_net(torch.Tensor(next_states))
     target = rewards + masks * args.gamma * target_next_q_values.max(1)[0]
     
     loss = criterion(q_value, target.detach())
@@ -64,8 +64,8 @@ def get_action(q_values, action_size, epsilon):
         _, action = torch.max(q_values, 1)
         return action.numpy()[0]
 
-def update_target_model(net, target_net):
-    target_net.load_state_dict(net.state_dict())
+def update_target_model(q_net, target_q_net):
+    target_q_net.load_state_dict(q_net.state_dict())
 
 
 def main():
@@ -78,11 +78,11 @@ def main():
     print('state size:', state_size) 
     print('action size:', action_size)
 
-    net = QNet(state_size, action_size, args)
-    target_net = QNet(state_size, action_size, args)
-    optimizer = optim.Adam(net.parameters(), lr=0.001)
+    q_net = QNet(state_size, action_size, args)
+    target_q_net = QNet(state_size, action_size, args)
+    optimizer = optim.Adam(q_net.parameters(), lr=0.001)
 
-    update_target_model(net, target_net)
+    update_target_model(q_net, target_q_net)
 
     writer = SummaryWriter(args.logdir)
     
@@ -103,7 +103,7 @@ def main():
 
             steps += 1
 
-            q_values = net(torch.Tensor(state))
+            q_values = q_net(torch.Tensor(state))
             action = get_action(q_values, action_size, args.epsilon)
 
             next_state, reward, done, _ = env.step(action)
@@ -123,11 +123,11 @@ def main():
 
                 mini_batch = random.sample(replay_buffer, args.batch_size)
                 
-                net.train(), target_net.train()
-                train_model(net, target_net, optimizer, mini_batch)
+                q_net.train(), target_q_net.train()
+                train_model(q_net, target_q_net, optimizer, mini_batch)
 
                 if steps % args.update_target:
-                    update_target_model(net, target_net)
+                    update_target_model(q_net, target_q_net)
 
         score = score if score == 500.0 else score + 1
         running_score = 0.99 * running_score + 0.01 * score
@@ -142,7 +142,7 @@ def main():
                 os.makedirs(args.save_path)
 
             ckpt_path = args.save_path + 'model.pth'
-            torch.save(net.state_dict(), ckpt_path)
+            torch.save(q_net.state_dict(), ckpt_path)
             print('Running score exceeds 400. So end')
             break  
 

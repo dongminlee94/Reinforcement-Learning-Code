@@ -92,7 +92,7 @@ def main():
     hard_target_update(actor, critic, actor_target, critic_target)
     ou_noise = OUNoise(action_size, args.theta, args.mu, args.sigma)
 
-    # writer = SummaryWriter(args.logdir)
+    writer = SummaryWriter(args.logdir)
     
     replay_buffer = deque(maxlen=10000)
     recent_rewards = deque(maxlen=100)
@@ -139,7 +139,7 @@ def main():
 
         if episode % args.log_interval == 0:
             print('{} episode | score_avg: {:.2f}'.format(episode, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), episode)
+            writer.add_scalar('log/score', float(score), episode)
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):
