@@ -31,7 +31,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor, critic, critic_target, mini_batch, 
+def train_model(actor, critic, target_critic, mini_batch, 
                 actor_optimizer, critic_optimizer, alpha_optimizer,
                 target_entropy, log_alpha, alpha):
     mini_batch = np.array(mini_batch)
@@ -54,7 +54,7 @@ def train_model(actor, critic, critic_target, mini_batch,
     # get target
     mu, std = actor(torch.Tensor(next_states))
     next_policy, next_log_policy = eval_action(mu, std)
-    target_next_q_value1, target_next_q_value2 = critic_target(torch.Tensor(next_states), next_policy)
+    target_next_q_value1, target_next_q_value2 = target_critic(torch.Tensor(next_states), next_policy)
     
     min_target_next_q_value = torch.min(target_next_q_value1, target_next_q_value2)
     min_target_next_q_value = min_target_next_q_value.squeeze(1) - alpha * next_log_policy.squeeze(1)
@@ -105,12 +105,12 @@ def main():
     
     actor = Actor(state_size, action_size, args)
     critic = Critic(state_size, action_size, args)
-    critic_target = Critic(state_size, action_size, args)
+    target_critic = Critic(state_size, action_size, args)
     
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    hard_target_update(critic, critic_target)
+    hard_target_update(critic, target_critic)
     
     # initialize automatic entropy tuning
     target_entropy = -torch.prod(torch.Tensor(action_size)).item()
@@ -153,12 +153,12 @@ def main():
             if steps > args.batch_size:
                 mini_batch = random.sample(replay_buffer, args.batch_size)
                 
-                actor.train(), critic.train(), critic_target.train()
-                alpha = train_model(actor, critic, critic_target, mini_batch, 
+                actor.train(), critic.train(), target_critic.train()
+                alpha = train_model(actor, critic, target_critic, mini_batch, 
                                     actor_optimizer, critic_optimizer, alpha_optimizer,
                                     target_entropy, log_alpha, alpha)
                 
-                soft_target_update(critic, critic_target, args.tau)
+                soft_target_update(critic, target_critic, args.tau)
 
             if done:
                 recent_rewards.append(score)

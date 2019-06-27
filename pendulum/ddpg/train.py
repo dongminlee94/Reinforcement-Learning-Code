@@ -22,10 +22,10 @@ parser.add_argument('--hidden_size', type=int, default=64)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--actor_lr', type=float, default=1e-3)
 parser.add_argument('--critic_lr', type=float, default=1e-3)
-parser.add_argument('--tau', type=float, default=0.001)
 parser.add_argument('--theta', type=float, default=0.15)
 parser.add_argument('--mu', type=float, default=0.0)
 parser.add_argument('--sigma', type=float, default=0.2)
+parser.add_argument('--tau', type=float, default=0.001)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--log_interval', type=int, default=10)
 parser.add_argument('--goal_score', type=int, default=-300)
@@ -33,7 +33,7 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
-def train_model(actor, critic, actor_target, critic_target, 
+def train_model(actor, critic, target_actor, target_critic, 
                 actor_optimizer, critic_optimizer, mini_batch):
     mini_batch = np.array(mini_batch)
     states = np.vstack(mini_batch[:, 0])
@@ -53,8 +53,8 @@ def train_model(actor, critic, actor_target, critic_target,
     q_value = critic(torch.Tensor(states), actions).squeeze(1)
     
     # get target
-    target_next_policy = actor_target(torch.Tensor(next_states))
-    target_next_q_value = critic_target(torch.Tensor(next_states), target_next_policy).squeeze(1)
+    target_next_policy = target_actor(torch.Tensor(next_states))
+    target_next_q_value = target_critic(torch.Tensor(next_states), target_next_policy).squeeze(1)
     target = rewards + masks * args.gamma * target_next_q_value
     
     critic_loss = criterion(q_value, target.detach())
@@ -82,14 +82,14 @@ def main():
     print('action size:', action_size)
     
     actor = Actor(state_size, action_size, args)
-    actor_target = Actor(state_size, action_size, args)
+    target_actor = Actor(state_size, action_size, args)
     critic = Critic(state_size, action_size, args)
-    critic_target = Critic(state_size, action_size, args)
+    target_critic = Critic(state_size, action_size, args)
     
     actor_optimizer = optim.Adam(actor.parameters(), lr=args.actor_lr)
     critic_optimizer = optim.Adam(critic.parameters(), lr=args.critic_lr)
 
-    hard_target_update(actor, critic, actor_target, critic_target)
+    hard_target_update(actor, critic, target_actor, target_critic)
     ou_noise = OUNoise(action_size, args.theta, args.mu, args.sigma)
 
     writer = SummaryWriter(args.logdir)
@@ -128,11 +128,11 @@ def main():
                 mini_batch = random.sample(replay_buffer, args.batch_size)
                 
                 actor.train(), critic.train()
-                actor_target.train(), critic_target.train()
-                train_model(actor, critic, actor_target, critic_target, 
+                target_actor.train(), target_critic.train()
+                train_model(actor, critic, target_actor, target_critic, 
                             actor_optimizer, critic_optimizer, mini_batch)
                 
-                soft_target_update(actor, critic, actor_target, critic_target, args.tau)
+                soft_target_update(actor, critic, target_actor, target_critic, args.tau)
 
             if done:
                 recent_rewards.append(score)

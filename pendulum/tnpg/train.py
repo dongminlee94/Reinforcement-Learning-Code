@@ -42,7 +42,7 @@ def train_model(actor, trajectories):
     returns = get_returns(rewards, masks, args.gamma)
 
     # ----------------------------
-    # step 2: get gradient of actor loss and hessian of kl and search direction
+    # step 2: get gradient of actor loss and search direction through conjugate gradient method
     mu, std = actor(torch.Tensor(states))
     log_policy = get_log_prob(actions, mu, std)
     actor_loss = get_loss(actor, returns, log_policy)

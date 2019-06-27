@@ -71,7 +71,7 @@ def train_model(actor, critic, critic_optimizer, trajectories, state_size, actio
             critic_optimizer.step()
 
     # ----------------------------
-    # step 3: get gradient of actor loss and hessian of kl and search direction
+    # step 3: get gradient of actor loss and search direction through conjugate gradient method
     mu, std = actor(torch.Tensor(states))
     old_policy = get_log_prob(actions, mu, std)
     actor_loss = surrogate_loss(actor, advantages, states, old_policy.detach(), actions)
