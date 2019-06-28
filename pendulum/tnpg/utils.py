@@ -61,7 +61,7 @@ def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
 
     return x
 
-def hessian_vector_product(actor, states, p, cg_damping):
+def hessian_vector_product(actor, states, p, cg_damping=1e-1):
     p.detach() 
     kl = kl_divergence(new_actor=actor, old_actor=actor, states=states)
     kl = kl.mean()

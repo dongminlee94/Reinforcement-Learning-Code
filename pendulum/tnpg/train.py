@@ -18,6 +18,7 @@ parser.add_argument('--save_path', default='./save_model/', help='')
 parser.add_argument('--render', action="store_true", default=False)
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--hidden_size', type=int, default=64)
+parser.add_argument('--max_kl', type=float, default=1e-2)
 parser.add_argument('--max_iter_num', type=int, default=1000)
 parser.add_argument('--total_sample_size', type=int, default=2048)
 parser.add_argument('--log_interval', type=int, default=5)
@@ -53,10 +54,16 @@ def train_model(actor, trajectories):
     search_dir = conjugate_gradient(actor, states, actor_loss_grad.data, nsteps=10)
     
     # ----------------------------
-    # step 3: update actor
+    # step 3: get step size and maximal step
+    gHg = (hessian_vector_product(actor, states, search_dir) * search_dir).sum(0, keepdim=True)
+    step_size = torch.sqrt(2 * args.max_kl / gHg)[0]
+    maximal_step = step_size * search_dir
+
+    # ----------------------------
+    # step 4: update actor
     params = flat_params(actor)
 
-    new_params = params + 0.5 * search_dir
+    new_params = params + maximal_step
     update_model(actor, new_params)
     
 
@@ -111,12 +118,13 @@ def main():
                 if done:
                     recent_rewards.append(score)
 
-        if iter % args.log_interval == 0:
-            print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), iter)
-        
         actor.train()
         train_model(actor, trajectories)
+        
+        writer.add_scalar('log/score', float(score), episodes)
+        
+        if iter % args.log_interval == 0:
+            print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):

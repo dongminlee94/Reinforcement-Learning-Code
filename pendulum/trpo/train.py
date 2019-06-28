@@ -152,13 +152,14 @@ def main():
 
                 if done:
                     recent_rewards.append(score)
-
-        if iter % args.log_interval == 0:
-            print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
         train_model(actor, trajectories, state_size, action_size)
+
+        writer.add_scalar('log/score', float(score), episodes)
+        
+        if iter % args.log_interval == 0:
+            print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))    
 
         if np.mean(recent_rewards) > args.goal_score:
             if not os.path.isdir(args.save_path):
