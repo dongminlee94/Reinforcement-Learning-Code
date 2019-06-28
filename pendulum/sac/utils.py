@@ -12,9 +12,9 @@ def eval_action(mu, std, epsilon=1e-6):
     normal = Normal(mu, std)
     z = normal.rsample() # reparameterization trick (mean + std * N(0,1))
     action = torch.tanh(z)
+    log_prob = normal.log_prob(z)
 
     # Enforcing Action Bounds
-    log_prob = normal.log_prob(z)
     log_prob -= torch.log(1 - action.pow(2) + epsilon)
     log_policy = log_prob.sum(1, keepdim=True)
 

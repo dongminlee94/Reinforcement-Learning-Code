@@ -58,11 +58,11 @@ def conjugate_gradient(actor, states, b, nsteps, residual_tol=1e-10):
     rdotr = torch.dot(r, r)
 
     for i in range(nsteps): # nsteps = 10
-        f_Ax = hessian_vector_product(actor, states, p, cg_damping=1e-1)
-        alpha = rdotr / torch.dot(p, f_Ax)
+        Ap = hessian_vector_product(actor, states, p, cg_damping=1e-1)
+        alpha = rdotr / torch.dot(p, Ap)
         
         x += alpha * p
-        r -= alpha * f_Ax
+        r -= alpha * Ap
         
         new_rdotr = torch.dot(r, r)
         betta = new_rdotr / rdotr

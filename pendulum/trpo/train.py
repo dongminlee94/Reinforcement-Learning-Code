@@ -56,10 +56,9 @@ def train_model(actor, trajectories, state_size, action_size):
     actor_loss = actor_loss.data.numpy()
     
     # ----------------------------
-    # step 3: get step-size alpha and maximal step
-    sHs = 0.5 * (search_dir * hessian_vector_product(actor, states, search_dir)
-                 ).sum(0, keepdim=True)
-    step_size = torch.sqrt(2 * args.max_kl / sHs)[0]
+    # step 3: get step size and maximal step
+    gHg = (hessian_vector_product(actor, states, search_dir) * search_dir).sum(0, keepdim=True)
+    step_size = torch.sqrt(2 * args.max_kl / gHg)[0]
     maximal_step = step_size * search_dir
 
     # ----------------------------    
@@ -69,45 +68,33 @@ def train_model(actor, trajectories, state_size, action_size):
     old_actor = Actor(state_size, action_size, args)
     update_model(old_actor, params)
     
-    # 구했던 maximal step만큼 parameter space에서 움직였을 때 예상되는 performance 변화
     expected_improve = (actor_loss_grad * maximal_step).sum(0, keepdim=True)
     expected_improve = expected_improve.data.numpy()
 
-    # Backtracking line search
-    # see cvx 464p https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf
-    # additionally, https://en.wikipedia.org/wiki/Backtracking_line_search
-    flag = False
+    backtrac_coef = 1.0
     alpha = 0.5
     beta = 0.5
-    t = 1.0
+    flag = False
 
     for i in range(10):
-        new_params = params + t * maximal_step
+        new_params = params + backtrac_coef * maximal_step
         update_model(actor, new_params)
         
         new_actor_loss = surrogate_loss(actor, returns, states, old_policy.detach(), actions)
         new_actor_loss = new_actor_loss.data.numpy()
 
         loss_improve = new_actor_loss - actor_loss
-        expected_improve *= t
+        expected_improve *= backtrac_coef
         improve_condition = loss_improve / expected_improve
 
         kl = kl_divergence(new_actor=actor, old_actor=old_actor, states=states)
         kl = kl.mean()
 
-        # print('kl: {:.4f} | loss_improve: {:.4f} | expected_improve: {:.4f} '
-        #       '| improve_condition: {:.4f} | number of line search: {}'
-        #       .format(kl.data.numpy(), loss_improve, expected_improve[0], improve_condition[0], i))
-
-        # kl-divergence와 expected_new_actor_loss_grad와 함께 trust region 안에 있는지 밖에 있는지를 판단
-        # trust region 안에 있으면 loop 탈출
-        # max_kl = 0.01
         if kl < args.max_kl and improve_condition > alpha:
             flag = True
             break
 
-        # trust region 밖에 있으면 maximal_step을 반만큼 쪼개서 다시 실시
-        t *= beta
+        backtrac_coef *= beta
 
     if not flag:
         params = flat_params(old_actor)
@@ -127,7 +114,7 @@ def main():
     
     actor = Actor(state_size, action_size, args)
 
-    # writer = SummaryWriter(args.logdir)
+    writer = SummaryWriter(args.logdir)
 
     recent_rewards = deque(maxlen=100)
     episodes = 0
@@ -168,7 +155,7 @@ def main():
 
         if iter % args.log_interval == 0:
             print('{} iter | {} episode | score_avg: {:.2f}'.format(iter, episodes, np.mean(recent_rewards)))
-            # writer.add_scalar('log/score', float(score), iter)
+            writer.add_scalar('log/score', float(score), iter)
         
         actor.train()
         train_model(actor, trajectories, state_size, action_size)
