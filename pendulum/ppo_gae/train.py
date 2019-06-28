@@ -130,13 +130,14 @@ def main():
         steps = 0
 
         while steps < args.total_sample_size: 
+            done = False
             score = 0
             episodes += 1
 
             state = env.reset()
             state = np.reshape(state, [1, state_size])
 
-            for _ in range(200):
+            while not done:
                 if args.render:
                     env.render()
 
