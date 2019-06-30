@@ -59,38 +59,38 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer,
         np.random.shuffle(arr)
 
         for i in range(n // args.batch_size):
-            mini_batch_index = arr[args.batch_size * i: args.batch_size * (i + 1)]
+            mini_batch_index = arr[args.batch_size * i : args.batch_size * (i + 1)]
             mini_batch_index = torch.LongTensor(mini_batch_index)
             
-            inputs = torch.Tensor(states)[mini_batch_index]
+            states_samples = torch.Tensor(states)[mini_batch_index]
             actions_samples = torch.Tensor(actions)[mini_batch_index]
             returns_samples = returns.unsqueeze(1)[mini_batch_index]
             advantages_samples = advantages.unsqueeze(1)[mini_batch_index]
-            oldvalue_samples = old_values[mini_batch_index].detach()
+            old_values_samples = old_values[mini_batch_index].detach()
             
             # get critic loss
-            values = critic(inputs)
-            clipped_values = oldvalue_samples + \
-                             torch.clamp(values - oldvalue_samples,
-                                         -args.clip_param, 
-                                         args.clip_param)
+            values_samples = critic(states_samples)
+            clipped_values_samples = old_values_samples + \
+                                    torch.clamp(values_samples - old_values_samples,
+                                                -args.clip_param, 
+                                                args.clip_param)
             
-            critic_loss1 = criterion(values, returns_samples)
-            critic_loss2 = criterion(clipped_values, returns_samples)
+            critic_loss = criterion(values_samples, returns_samples)
+            clipped_critic_loss = criterion(clipped_values_samples, returns_samples)
             
-            critic_loss = torch.max(critic_loss1, critic_loss2)
+            critic_loss = torch.max(critic_loss, clipped_critic_loss)
 
             # get actor loss
-            loss, ratio = surrogate_loss(actor, advantages_samples, inputs,
-                                         old_policy.detach(), actions_samples,
-                                         mini_batch_index)
-            
+            actor_loss, ratio = surrogate_loss(actor, advantages_samples, states_samples,
+                                                old_policy.detach(), actions_samples,
+                                                mini_batch_index)
+
             clipped_ratio = torch.clamp(ratio,
                                         1.0 - args.clip_param,
                                         1.0 + args.clip_param)
-            clipped_loss = clipped_ratio * advantages_samples
+            clipped_actor_loss = clipped_ratio * advantages_samples
             
-            actor_loss = -torch.min(loss, clipped_loss).mean()
+            actor_loss = -torch.min(actor_loss, clipped_actor_loss).mean()
 
             # update actor & critic 
             loss = actor_loss + 0.5 * critic_loss

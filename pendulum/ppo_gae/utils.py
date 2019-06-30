@@ -41,6 +41,7 @@ def get_log_prob(actions, mu, std):
 def surrogate_loss(actor, advantages, states, old_policy, actions, batch_index):
     mu, std = actor(torch.Tensor(states))
     new_policy = get_log_prob(actions, mu, std)
+    
     old_policy = old_policy[batch_index]
 
     ratio = torch.exp(new_policy - old_policy)
