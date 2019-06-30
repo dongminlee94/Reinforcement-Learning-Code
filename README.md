@@ -95,6 +95,8 @@
 
 ### Pendulum
 
+<img src="img/pendulum.png" width="500"/>
+
 ### Hopper
 
 ---
