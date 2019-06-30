@@ -57,13 +57,13 @@ def train_model(actor, critic, critic_optimizer, trajectories, state_size, actio
         np.random.shuffle(arr)
 
         for i in range(n // args.batch_size):
-            batch_index = arr[args.batch_size * i: args.batch_size * (i + 1)]
-            batch_index = torch.LongTensor(batch_index)
+            mini_batch_index = arr[args.batch_size * i : args.batch_size * (i + 1)]
+            mini_batch_index = torch.LongTensor(mini_batch_index)
 
-            inputs = torch.Tensor(states)[batch_index]
+            inputs = torch.Tensor(states)[mini_batch_index]
             values_samples = critic(inputs)
 
-            target_samples = returns.unsqueeze(1)[batch_index]
+            target_samples = returns.unsqueeze(1)[mini_batch_index]
 
             critic_loss = criterion(values_samples, target_samples)
             critic_optimizer.zero_grad()

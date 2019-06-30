@@ -59,14 +59,14 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer,
         np.random.shuffle(arr)
 
         for i in range(n // args.batch_size):
-            batch_index = arr[args.batch_size * i: args.batch_size * (i + 1)]
-            batch_index = torch.LongTensor(batch_index)
+            mini_batch_index = arr[args.batch_size * i: args.batch_size * (i + 1)]
+            mini_batch_index = torch.LongTensor(mini_batch_index)
             
-            inputs = torch.Tensor(states)[batch_index]
-            actions_samples = torch.Tensor(actions)[batch_index]
-            returns_samples = returns.unsqueeze(1)[batch_index]
-            advantages_samples = advantages.unsqueeze(1)[batch_index]
-            oldvalue_samples = old_values[batch_index].detach()
+            inputs = torch.Tensor(states)[mini_batch_index]
+            actions_samples = torch.Tensor(actions)[mini_batch_index]
+            returns_samples = returns.unsqueeze(1)[mini_batch_index]
+            advantages_samples = advantages.unsqueeze(1)[mini_batch_index]
+            oldvalue_samples = old_values[mini_batch_index].detach()
             
             # get critic loss
             values = critic(inputs)
@@ -83,7 +83,7 @@ def train_model(actor, critic, actor_optimizer, critic_optimizer,
             # get actor loss
             loss, ratio = surrogate_loss(actor, advantages_samples, inputs,
                                          old_policy.detach(), actions_samples,
-                                         batch_index)
+                                         mini_batch_index)
             
             clipped_ratio = torch.clamp(ratio,
                                         1.0 - args.clip_param,

@@ -17,13 +17,14 @@ def get_gae(rewards, masks, values, args):
     running_advants = 0
 
     for t in reversed(range(0, len(rewards))):
+        # return
         running_returns = rewards[t] + masks[t] * args.gamma * running_returns
-        running_tderror = rewards[t] + masks[t] * args.gamma * previous_value - \
-                            values.data[t]
-        running_advants = running_tderror + masks[t] * args.gamma * args.lamda * \
-                          running_advants
-
         returns[t] = running_returns
+
+        # advantage
+        running_deltas = rewards[t] + masks[t] * args.gamma * previous_value - values.data[t]
+        running_advants = running_deltas + masks[t] * args.gamma * args.lamda * running_advants
+        
         previous_value = values.data[t]
         advantages[t] = running_advants
 
