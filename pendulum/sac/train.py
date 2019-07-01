@@ -31,6 +31,9 @@ parser.add_argument('--logdir', type=str, default='./logs',
                     help='tensorboardx logs directory')
 args = parser.parse_args()
 
+def eval_action(mu, std, epsilon=1e-6):
+    pass
+
 def train_model(actor, critic, target_critic, mini_batch, 
                 actor_optimizer, critic_optimizer, alpha_optimizer,
                 target_entropy, log_alpha, alpha):
@@ -48,7 +51,7 @@ def train_model(actor, critic, target_critic, mini_batch,
     # update critic 
     criterion = torch.nn.MSELoss()
     
-    # get Q-value and use two Q-functions to mitigate positive bias in the policy improvement step
+    # get Q-values using two Q-functions to mitigate overestimation bias
     q_value1, q_value2 = critic(torch.Tensor(states), actions)
 
     # get target
