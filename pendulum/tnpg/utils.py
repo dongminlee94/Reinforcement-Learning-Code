@@ -20,10 +20,10 @@ def get_returns(rewards, masks, gamma):
 
     return returns
 
-def get_loss(actor, returns, log_policy):
-    returns = returns.unsqueeze(1)
+def get_loss(actor, values, targets, log_policy):
+    advantages = targets - values
 
-    loss = log_policy * returns
+    loss = log_policy * advantages
     loss = loss.mean()
 
     return loss

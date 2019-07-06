@@ -26,13 +26,13 @@ def get_log_prob(actions, mu, std):
 
     return log_prob
 
-def surrogate_loss(actor, returns, states, old_policy, actions):
+def surrogate_loss(actor, values, targets, states, old_policy, actions):
     mu, std = actor(torch.Tensor(states))
     new_policy = get_log_prob(actions, mu, std)
 
-    returns = returns.unsqueeze(1)
+    advantages = targets - values
 
-    surrogate_loss = torch.exp(new_policy - old_policy) * returns
+    surrogate_loss = torch.exp(new_policy - old_policy) * advantages
     surrogate_loss = surrogate_loss.mean()
 
     return surrogate_loss
@@ -75,7 +75,7 @@ def hessian_vector_product(actor, states, p, cg_damping=1e-1):
     kl_hessian = torch.autograd.grad(kl_grad_p, actor.parameters())
     kl_hessian = flat_hessian(kl_hessian)
 
-    return kl_hessian + p * cg_damping # cg_damping = 0.1
+    return kl_hessian + p * cg_damping 
 
 def kl_divergence(new_actor, old_actor, states):
     mu, std = new_actor(torch.Tensor(states))
@@ -121,3 +121,38 @@ def update_model(model, new_params):
         new_param = new_param.view(params.size())
         params.data.copy_(new_param)
         index += params_length
+
+
+def backtracking_line_search(old_actor, actor, actor_loss, actor_loss_grad, 
+                             old_policy, params, maximal_step, max_kl,
+                             values, targets, states, actions):
+    backtrac_coef = 1.0
+    alpha = 0.5
+    beta = 0.5
+    flag = False
+
+    expected_improve = (actor_loss_grad * maximal_step).sum(0, keepdim=True)
+
+    for i in range(10):
+        new_params = params + backtrac_coef * maximal_step
+        update_model(actor, new_params)
+        
+        new_actor_loss = surrogate_loss(actor, values, targets, states, old_policy.detach(), actions)
+
+        loss_improve = new_actor_loss - actor_loss
+        expected_improve *= backtrac_coef
+        improve_condition = loss_improve / expected_improve
+
+        kl = kl_divergence(new_actor=actor, old_actor=old_actor, states=states)
+        kl = kl.mean()
+
+        if kl < max_kl and improve_condition > alpha:
+            flag = True
+            break
+
+        backtrac_coef *= beta
+
+    if not flag:
+        params = flat_params(old_actor)
+        update_model(actor, params)
+        print('policy update does not impove the surrogate')
