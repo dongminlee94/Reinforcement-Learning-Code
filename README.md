@@ -95,11 +95,11 @@
 
 ### CartPole
 
-<img src="img/cartpole.png" width="700"/>
+<img src="img/cartpole.png" width="600"/>
 
 ### Pendulum
 
-<img src="img/pendulum.png" width="700"/>
+<img src="img/pendulum.png" width="600"/>
 
 ### Hopper
 
