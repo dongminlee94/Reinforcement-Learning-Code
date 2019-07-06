@@ -55,7 +55,11 @@
 - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/trpo_gae)
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/trpo)
 
-#### GAE + Proximal Policy Optimization (PPO)
+#### Proximal Policy Optimization (PPO)
+
+- [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/ppo)
+
+#### PPO + Generalized Advantage Estimator (GAE)
 
 - [Pendulum(Classic control)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/pendulum/ppo_gae)
 - [Hopper(MoJoCo)](https://github.com/dongminleeai/Reinforcement-Learning-Code/tree/master/mujoco/ppo)
