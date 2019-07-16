@@ -123,7 +123,7 @@ def main():
             if not os.path.isdir(args.save_path):
                 os.makedirs(args.save_path)
     
-            ckpt_path = args.save_path + 'model.pth'
+            ckpt_path = args.save_path + 'model.pth.tar'
             torch.save(actor.state_dict(), ckpt_path)
             print('Running score exceeds 400. So end')
             break  
