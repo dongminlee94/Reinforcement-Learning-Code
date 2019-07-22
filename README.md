@@ -1,8 +1,8 @@
-# Reinforcement Learning Code
+# Reinforcement Learning Code with PyTorch
 
 ## Papers
 
-- [Deep Q-Network (DQN)](https://daiwk.github.io/assets/dqn.pdf)
+- [Deep Q-Network (DQN)](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf)
 - [Double DQN (DDQN)](https://arxiv.org/pdf/1509.06461.pdf)
 - [Advantage Actor-Critic (A2C)](http://incompleteideas.net/book/RLbook2018.pdf)
 - [Asynchronous Advantage Actor-Critic (A3C)](https://arxiv.org/pdf/1602.01783.pdf)

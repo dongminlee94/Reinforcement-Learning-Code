@@ -9,10 +9,13 @@ from utils import *
 from model import Actor, Critic
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--env_name', type=str, default="Pendulum-v0")
+parser.add_argument('--env_name', type=str, default="MountainCarContinuous-v0")
 parser.add_argument("--load_model", type=str, default='model.pth.tar')
 parser.add_argument('--render', action="store_true", default=True)
 parser.add_argument('--hidden_size', type=int, default=64)
+parser.add_argument('--theta', type=float, default=0.15)
+parser.add_argument('--mu', type=float, default=0.0)
+parser.add_argument('--sigma', type=float, default=0.2)
 parser.add_argument('--iter', type=int, default=10000)
 parser.add_argument('--log_interval', type=int, default=10)
 args = parser.parse_args()
@@ -34,6 +37,7 @@ if __name__=="__main__":
         pretrained_model = torch.load(pretrained_model_path)
         actor.load_state_dict(pretrained_model)
 
+    ou_noise = OUNoise(action_size, args.theta, args.mu, args.sigma)
     steps = 0
     
     for episode in range(args.iter):
@@ -49,8 +53,8 @@ if __name__=="__main__":
 
             steps += 1
 
-            mu, std = actor(torch.Tensor(state))
-            action = get_action(mu, std)
+            policy = actor(torch.Tensor(state))
+            action = get_action(policy, ou_noise)
             
             next_state, reward, done, _ = env.step(action)
             
@@ -59,4 +63,4 @@ if __name__=="__main__":
             score += reward
 
         if episode % args.log_interval == 0:
-            print('{} episode | score: {:.2f}'.format(episode, score[0]))
+            print('{} episode | score: {:.2f}'.format(episode, score))
